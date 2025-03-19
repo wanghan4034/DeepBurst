@@ -36,7 +36,6 @@ parser.add_argument("--w_prom", type=int, default=40000)
 parser.add_argument("--w_max", type=int, default=40000)
 parser.add_argument("--binsizes", nargs="+",type=int, default=[500])
 parser.add_argument("--remove_marks", nargs="+",type=str, default=[])
-parser.add_argument("--add_feature_bin", action="store_true", default=False)
 parser.add_argument("--targets", nargs="+",type=str, default=['bs_label','bf_label'])
 parser.add_argument("--restore", action="store_true", default=False)
 
@@ -50,8 +49,6 @@ config = get_config(args.config)
 
 config["exp_id"] = args.exp_id  # Override
 config["remove_marks"] = args.remove_marks
-add_feature_bin = args.add_feature_bin
-feature_bin_kws = config['feature_bin_kws']
 seed = config["seed"]
 num_epoch = config["num_epoch"]
 lr = config["lr"]
@@ -63,12 +60,9 @@ i_max = config["i_max"]
 w_prom = args.w_prom
 w_max = args.w_max
 
-n_feats_p = config['promoter_feats_basic_nums'] - len(config["remove_marks"])  + feature_bin_kws['out_channels'] if add_feature_bin else config['promoter_feats_basic_nums'] - len(config["remove_marks"])
-n_feats_pcres = config['pcres_feats_basic_nums'] 
+n_feats_p = config['marks_nums'] - len(config["remove_marks"])
 d_emb = config["embed"]["d_model"]
 embed_kws = config["embed"]
-pairwise_interaction_kws = config["pairwise_interaction"]
-regulation_kws = config["regulation"]
 
 d_head = config["d_head"]
 targets = args.targets

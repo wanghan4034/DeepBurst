@@ -8,7 +8,7 @@ do
     for fold in 0 1 2 3
     do  
         echo "experiment $eid $fold"
-        python benchmark/Promoterformer/train.py --config benchmark/Promoterformer/configs/default.yaml --meta extra/datasets/processed/v1/meta_datasets/meta_data_$eid.csv  --npy-dir extra/datasets/processed/v1 --fold $fold  -o benchmark/Promoterformer/checkpoints/$eid.$fold.No_feature_bin.mean_para.model.pt --exp-id 2 --targets mean_label --binsizes 500 > benchmark/Promoterformer/logs/$eid.$fold.No_feature_bin.mean_para.train.log 2>&1
+        python train.py --config configs/default.yaml --meta extra/datasets/processed/v1/meta_datasets/meta_data_$eid.csv  --npy-dir extra/datasets/processed/v1 --fold $fold  -o checkpoints/$eid.$fold.mean_para.model.pt --exp-id 2 --targets mean_label --binsizes 500 > logs/$eid.$fold.mean_para.train.log 2>&1
         sleep 120
     done
 done 
@@ -25,7 +25,7 @@ do
             echo "experiment $eid $mark $fold"
             tag=`echo $mark | tr ' ' '_'`
             echo "experiment tag: $tag"
-            python benchmark/Promoterformer/train.py --config benchmark/Promoterformer/configs/default.yaml --meta extra/datasets/processed/v1/meta_datasets/meta_data_$eid.csv  --npy-dir extra/datasets/processed/v1 --fold $fold  -o benchmark/Promoterformer/checkpoints/$eid.remove_$tag.$fold.No_feature_bin.mean_para.model.pt --exp-id 2 --binsizes 500 --remove_marks $mark --targets mean_label > benchmark/Promoterformer/logs/$eid.remove_$tag.$fold.No_feature_bin.mean_para.train.log 2>&1
+            python train.py --config configs/default.yaml --meta extra/datasets/processed/v1/meta_datasets/meta_data_$eid.csv  --npy-dir extra/datasets/processed/v1 --fold $fold  -o checkpoints/$eid.remove_$tag.$fold.mean_para.model.pt --exp-id 2 --binsizes 500 --remove_marks $mark --targets mean_label > logs/$eid.remove_$tag.$fold.mean_para.train.log 2>&1
             sleep 120
         done
     done 
@@ -44,7 +44,7 @@ do
         for fold in 0 1 2 3
         do  
             echo "experiment $eid $mark $fold"
-            python benchmark/Promoterformer/train.py --config benchmark/Promoterformer/configs/default.yaml --meta extra/datasets/processed/v1/meta_datasets/meta_data_$eid.csv  --npy-dir extra/datasets/processed/v1 --fold $fold  -o benchmark/Promoterformer/checkpoints/$eid.remove_$mark.$fold.No_feature_bin.mean_para.model.pt --exp-id 2  --targets mean_label --binsizes 500 --remove_marks $mark > benchmark/Promoterformer/logs/$eid.remove_$mark.$fold.No_feature_bin.mean_para.train.log 2>&1
+            python train.py --config configs/default.yaml --meta extra/datasets/processed/v1/meta_datasets/meta_data_$eid.csv  --npy-dir extra/datasets/processed/v1 --fold $fold  -o checkpoints/$eid.remove_$mark.$fold.mean_para.model.pt --exp-id 2  --targets mean_label --binsizes 500 --remove_marks $mark > logs/$eid.remove_$mark.$fold.mean_para.train.log 2>&1
             sleep 120
         done
     done 
@@ -55,7 +55,7 @@ echo "Job4"
 for fold in 0 1 2 3
 do  
     echo "experiment agnostic model $fold"
-    python benchmark/Promoterformer/train.py --config benchmark/Promoterformer/configs/default.yaml --meta extra/datasets/processed/v1/train.csv  --npy-dir extra/datasets/processed/v1 --fold $fold  -o benchmark/Promoterformer/checkpoints/agnostic.$fold.No_feature_bin.mean_para.model.pt --exp-id 2  --binsizes 500 --targets mean_label  > benchmark/Promoterformer/logs/agnostic.$fold.No_feature_bin.mean_para.train.log 2>&1
+    python train.py --config configs/default.yaml --meta extra/datasets/processed/v1/train.csv  --npy-dir extra/datasets/processed/v1 --fold $fold  -o checkpoints/agnostic.$fold.mean_para.model.pt --exp-id 2  --binsizes 500 --targets mean_label  > logs/agnostic.$fold.mean_para.train.log 2>&1
     sleep 120
 done
 
@@ -67,7 +67,7 @@ do
         for fold in 0 1 2 3
         do  
             echo "experiment $eid $fold $distance"
-            python benchmark/Promoterformer/train.py --config benchmark/Promoterformer/configs/default.yaml --meta extra/datasets/processed/v1/meta_datasets/meta_data_$eid.csv  --npy-dir extra/datasets/processed/v1 --fold $fold  -o benchmark/Promoterformer/checkpoints/$eid.$fold.No_feature_bin.$distance.mean_para.model.pt --exp-id 2 --binsizes 500 --w_prom $distance --w_max $distance --targets mean_label > benchmark/Promoterformer/logs/$eid.$fold.No_feature_bin.$distance.mean_para.train.log 2>&1
+            python train.py --config configs/default.yaml --meta extra/datasets/processed/v1/meta_datasets/meta_data_$eid.csv  --npy-dir extra/datasets/processed/v1 --fold $fold  -o checkpoints/$eid.$fold.$distance.mean_para.model.pt --exp-id 2 --binsizes 500 --w_prom $distance --w_max $distance --targets mean_label > logs/$eid.$fold.$distance.mean_para.train.log 2>&1
             sleep 120
         done
     done 
@@ -82,7 +82,7 @@ do
         for fold in 0 1 2 3
         do  
             echo "experiment $eid $fold"
-            python benchmark/Promoterformer/train.py --config benchmark/Promoterformer/configs/default.yaml --meta extra/datasets/processed/v1/meta_datasets/meta_data_$eid.csv  --npy-dir extra/datasets/processed/v1 --fold $fold  -o benchmark/Promoterformer/checkpoints/$eid.$fold.binsize_$binsize.No_feature_bin.mean_para.model.pt --exp-id 2 --targets mean_label --binsizes $binsize > benchmark/Promoterformer/logs/$eid.$fold.binsize_$binsize.No_feature_bin.mean_para.train.log 2>&1
+            python train.py --config configs/default.yaml --meta extra/datasets/processed/v1/meta_datasets/meta_data_$eid.csv  --npy-dir extra/datasets/processed/v1 --fold $fold  -o checkpoints/$eid.$fold.binsize_$binsize.mean_para.model.pt --exp-id 2 --targets mean_label --binsizes $binsize > logs/$eid.$fold.binsize_$binsize.mean_para.train.log 2>&1
             sleep 120
         done
     done 
@@ -99,7 +99,7 @@ do
             echo "experiment $eid $mark $fold"
             tag=`echo $mark | tr ' ' '_'`
             echo "experiment tag: $tag"
-            python benchmark/Promoterformer/train.py --config benchmark/Promoterformer/configs/default.yaml --meta extra/datasets/processed/v1/meta_datasets/meta_data_$eid.csv  --npy-dir extra/datasets/processed/v1 --fold $fold  -o benchmark/Promoterformer/checkpoints/$eid.$tag.$fold.No_feature_bin.mean_para.model.pt --exp-id 2 --targets mean_label --binsizes 500 --remove_marks $mark > benchmark/Promoterformer/logs/$eid.$tag.$fold.No_feature_bin.mean_para.train.log 2>&1
+            python train.py --config configs/default.yaml --meta extra/datasets/processed/v1/meta_datasets/meta_data_$eid.csv  --npy-dir extra/datasets/processed/v1 --fold $fold  -o checkpoints/$eid.$tag.$fold.mean_para.model.pt --exp-id 2 --targets mean_label --binsizes 500 --remove_marks $mark > logs/$eid.$tag.$fold.mean_para.train.log 2>&1
             sleep 120
         done
     done 

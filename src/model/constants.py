@@ -20,7 +20,7 @@ GENOMIC_SLICE = 'genomic_slice'
 START_PADDING_SIZE = 'start_padding_size'
 END_PADDING_SIZE = 'end_padding_size'
 
-CONFIG_PATH = 'benchmark/Promoterformer/configs/default.yaml'
+CONFIG_PATH = 'configs/default.yaml'
 def get_config(config_path):
     with open(config_path) as f:
         config = yaml.safe_load(f)
