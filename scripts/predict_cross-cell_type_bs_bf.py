@@ -12,13 +12,17 @@ from src.utils.tools import seed_everything
 from src.utils.constants import DEVICE
 from benchmark.Promoterformer.constants import get_config
 
-MARKS = ["H3K4me1","H3K4me3","H3K9me3","H3K27me3","H3K36me3","H3K27ac","H3K9ac"]
+
 torch.autograd.set_detect_anomaly(True)
 
 def get_lr(optimizer):
     for param_group in optimizer.param_groups:
         return param_group["lr"]
 
+#
+# Training setup.
+#
+    
 def evaluation(out:'torch.Tensor', label:'torch.Tensor'):
     score = out.softmax(axis=1)[:, 1]
     pred = out.argmax(axis=1)
@@ -31,59 +35,48 @@ def evaluation(out:'torch.Tensor', label:'torch.Tensor'):
 config_path = "configs/default.yaml"
 config = get_config(config_path)
 add_feature_bin = False
-for eid in ["E116","E118","E003"]:
-    predictions = []
 
-    for keep_mark in MARKS:
-        print(f'EID:{eid}, keep_mark:{keep_mark}')
-        keep_marks = [keep_mark]
-        masked_marks = [keep_mark]
-        marked_bin_idxes = [i for i in range(80)]
-        config['marked_bin_idxes'] = marked_bin_idxes
-        config['masked_marks'] = masked_marks
+config["remove_marks"] = []
 
+feature_bin_kws = config['feature_bin_kws']
+seed = config["seed"]
 
-        remove_marks = [mark for mark in MARKS if mark not in keep_marks]
-        config["remove_marks"] = remove_marks
-        model_tag = '_'.join(remove_marks)
+config['marked_bin_idxes'] = []
+config['masked_marks'] = []
 
-        feature_bin_kws = config['feature_bin_kws']
-        seed = config["seed"]
+bsz = config["bsz"]
+gamma = config["gamma"]
 
-        bsz = config["bsz"]
-        gamma = config["gamma"]
+i_max = config["i_max"]
+w_prom = config["w_prom"]
+w_max = config["w_max"]
 
-        i_max = config["i_max"]
-        w_prom = config["w_prom"]
-        w_max = config["w_max"]
-
-        n_feats_p = config['promoter_feats_basic_nums'] - len(config["remove_marks"])  + feature_bin_kws['out_channels'] if add_feature_bin else config['promoter_feats_basic_nums'] - len(config["remove_marks"])
-        n_feats_pcres = config['pcres_feats_basic_nums'] 
-        d_emb = config["embed"]["d_model"]
-        embed_kws = config["embed"]
-        pairwise_interaction_kws = config["pairwise_interaction"]
-        regulation_kws = config["regulation"]
-        d_head = config["d_head"]
-        targets = ['bs_label','bf_label']
-        npy_dir = "extra/datasets/processed/v1"
+n_feats_p = config['promoter_feats_basic_nums']  + feature_bin_kws['out_channels'] - len(config["remove_marks"]) if add_feature_bin else config['promoter_feats_basic_nums'] - len(config["remove_marks"])
+n_feats_pcres = config['pcres_feats_basic_nums'] 
+d_emb = config["embed"]["d_model"]
+embed_kws = config["embed"]
+pairwise_interaction_kws = config["pairwise_interaction"]
+regulation_kws = config["regulation"]
+d_head = config["d_head"]
+targets = ['bs_label','bf_label']
+npy_dir = "extra/datasets/processed/v1"
 
 
-        binsizes = [500]
+binsizes = [500]
 
 
-        for perturbation_strength in range(11):
-            config['perturbation_strength'] = perturbation_strength * 0.1
+with open("extra/datasets/results/cross_cell_type_bs_bf_para.csv",'w') as w:
+    columns = ['bs_auc','bf_auc','fold','train_eid','valid_eid']
+    w.write('\t'.join(columns)+'\n')
+    for train_eid in ["E116","E118","E003"]:
+        for valid_eid in  ["E116","E118","E003"]:
+
             for fold in [0,1,2,3]:
-                print(f"eid:{eid},fold:{fold}")
-                checkpoints = f"checkpoints/{eid}.remove_{model_tag}.{fold}.No_feature_bin.bs_bf_para.model.pt"
+                print(f"train_eid:{train_eid},valid_eid:{valid_eid},fold:{fold}")
+                checkpoints = f"checkpoints/{train_eid}.{fold}.No_feature_bin.bs_bf_para.model.pt"
+                meta_path = f"extra/datasets/processed/v1/meta_datasets/meta_data_{valid_eid}.csv"
 
-                meta_path = f"extra/datasets/processed/v1/meta_datasets/meta_data_{eid}.csv"
-
-                #
-                # Setup end.
-                #
-
-                seed_everything(seed)
+                seed_everything(seed) 
                 meta = (
                     pd.read_csv(meta_path).sample(frac=1, random_state=seed).reset_index(drop=True)
                 )  # load and shuffle.
@@ -117,6 +110,8 @@ for eid in ["E116","E118","E003"]:
                     qs[(fold + 0) % 4] + qs[(fold + 1) % 4] + qs[(fold + 2) % 4]
                 )
                 val_genes = qs[(fold + 3) % 4]
+
+
 
                 print(len(train_genes), len(val_genes))
 
@@ -169,7 +164,9 @@ for eid in ["E116","E118","E003"]:
                                 d[k] = v.to(DEVICE)
 
                         out = model(
+                            # d['promoter_seq'],
                             d["promoter_feats"][500],
+                            d["promoter_pad_masks"][500],
                         )
                         val_out.append(out.cpu())
 
@@ -189,31 +186,25 @@ for eid in ["E116","E118","E003"]:
 
                 # Metrics.
 
+                ckpt = {}
+                ckpt['gene_id'] = gene_ids
                 description = ""
-                records = {}
-                records['gene_id'] = gene_ids
+                line = []
                 for target in targets:
                     val_score, val_label, val_pred, val_acc, val_auc, val_ap = evaluation(val_preds[target],val_labels[target])
 
-                    records[f'{target}_label'] = val_label.cpu().numpy().squeeze()
-                    records[f'{target}_score'] = val_score.cpu().numpy().squeeze()
-                    records[f'{target}_pred'] = val_pred.cpu().numpy().squeeze()     
+                    ckpt[f'{target}_label'] = val_label
+                    ckpt[f'{target}_score'] = val_score
+                    ckpt[f'{target}_pred'] = val_pred
+                    ckpt[f'{target}_val_acc'] = val_acc
+                    ckpt[f'{target}_val_auc'] = val_auc
+                    ckpt[f'{target}_val_ap'] = val_ap       
                     description += f"{target}: acc={val_acc:.4f}, auc={val_auc:.4f}, ap={val_ap:.4f} " 
-                
-                records['fold'] = fold
-                records['keep_mark'] = keep_mark
-                records['perturbation_strength'] = perturbation_strength
-                df = pd.DataFrame(records)
-                predictions.append(df)
+                    line.append(str(ckpt[f'{target}_val_auc']))
 
-                print(description)
-
-    print(f'EID:{eid}, keep_mark:{keep_mark} Done')
-    predictions = pd.concat(predictions,axis=0)
-
-    predictions.to_csv(f"extra/datasets/results/{eid}_perturbation_predictions_bs_bf.csv",index=False)
-    
+                line += [str(fold),train_eid,valid_eid]
+                w.write('\t'.join(line)+'\n')
 
 
 if __name__ == '__main__':
-    print('Done')
+    print("Done")

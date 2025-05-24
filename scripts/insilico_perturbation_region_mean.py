@@ -38,14 +38,17 @@ for eid in ["E116","E118","E003"]:
         print(f'EID:{eid}, keep_mark:{keep_mark}')
         keep_marks = [keep_mark]
         masked_marks = [keep_mark]
-        marked_bin_idxes = [i for i in range(80)]
-        config['marked_bin_idxes'] = marked_bin_idxes
+
         config['masked_marks'] = masked_marks
 
 
         remove_marks = [mark for mark in MARKS if mark not in keep_marks]
-        config["remove_marks"] = remove_marks
-        model_tag = '_'.join(remove_marks)
+        if remove_marks:
+            config["remove_marks"] = remove_marks
+            model_tag = '_'.join(remove_marks)
+        else:
+            config["remove_marks"] = []
+
 
         feature_bin_kws = config['feature_bin_kws']
         seed = config["seed"]
@@ -64,18 +67,23 @@ for eid in ["E116","E118","E003"]:
         pairwise_interaction_kws = config["pairwise_interaction"]
         regulation_kws = config["regulation"]
         d_head = config["d_head"]
-        targets = ['bs_label','bf_label']
+        targets = ['mean_label']
         npy_dir = "extra/datasets/processed/v1"
 
 
         binsizes = [500]
 
 
-        for perturbation_strength in range(11):
-            config['perturbation_strength'] = perturbation_strength * 0.1
+        for i  in tqdm(range(0,80,4)):
+            config['perturbation_strength'] = 0
+            config['marked_bin_idxes'] = [i,i+1,i+2,i+3]
             for fold in [0,1,2,3]:
                 print(f"eid:{eid},fold:{fold}")
-                checkpoints = f"checkpoints/{eid}.remove_{model_tag}.{fold}.No_feature_bin.bs_bf_para.model.pt"
+                if remove_marks:
+                    checkpoints = f"checkpoints/{eid}.remove_{model_tag}.{fold}.No_feature_bin.mean_para.model.pt"
+                else :
+                    checkpoints = f"checkpoints/{eid}.{fold}.No_feature_bin.mean_para.model.pt"
+
 
                 meta_path = f"extra/datasets/processed/v1/meta_datasets/meta_data_{eid}.csv"
 
@@ -202,7 +210,7 @@ for eid in ["E116","E118","E003"]:
                 
                 records['fold'] = fold
                 records['keep_mark'] = keep_mark
-                records['perturbation_strength'] = perturbation_strength
+                records['perturbation_region'] = '_'.join([str(i) for i in config['marked_bin_idxes']])
                 df = pd.DataFrame(records)
                 predictions.append(df)
 
@@ -211,7 +219,7 @@ for eid in ["E116","E118","E003"]:
     print(f'EID:{eid}, keep_mark:{keep_mark} Done')
     predictions = pd.concat(predictions,axis=0)
 
-    predictions.to_csv(f"extra/datasets/results/{eid}_perturbation_predictions_bs_bf.csv",index=False)
+    predictions.to_csv(f"extra/datasets/results/{eid}_perturbation_region_predictions_mean.csv",index=False)
     
 
 

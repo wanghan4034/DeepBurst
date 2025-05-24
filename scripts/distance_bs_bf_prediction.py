@@ -12,17 +12,13 @@ from src.utils.tools import seed_everything
 from src.utils.constants import DEVICE
 from benchmark.Promoterformer.constants import get_config
 
-
+MARKS = ["H3K4me1","H3K4me3","H3K9me3","H3K27me3","H3K36me3","H3K27ac","H3K9ac"]
 torch.autograd.set_detect_anomaly(True)
 
 def get_lr(optimizer):
     for param_group in optimizer.param_groups:
         return param_group["lr"]
 
-#
-# Training setup.
-#
-    
 def evaluation(out:'torch.Tensor', label:'torch.Tensor'):
     score = out.softmax(axis=1)[:, 1]
     pred = out.argmax(axis=1)
@@ -35,47 +31,50 @@ def evaluation(out:'torch.Tensor', label:'torch.Tensor'):
 config_path = "configs/default.yaml"
 config = get_config(config_path)
 add_feature_bin = False
+predictions = []
+for eid in ["E116","E118","E003"]:
+    config["remove_marks"] = []
+    config['masked_marks'] = MARKS
+    
 
-config["remove_marks"] = []
+    feature_bin_kws = config['feature_bin_kws']
+    seed = config["seed"]
 
-feature_bin_kws = config['feature_bin_kws']
-seed = config["seed"]
+    bsz = config["bsz"]
+    gamma = config["gamma"]
 
-config['marked_bin_idxes'] = []
-config['masked_marks'] = []
+    i_max = config["i_max"]
+    w_prom = config["w_prom"]
+    w_max = config["w_max"]
 
-bsz = config["bsz"]
-gamma = config["gamma"]
-
-i_max = config["i_max"]
-w_prom = config["w_prom"]
-w_max = config["w_max"]
-
-n_feats_p = config['promoter_feats_basic_nums']  + feature_bin_kws['out_channels'] - len(config["remove_marks"]) if add_feature_bin else config['promoter_feats_basic_nums'] - len(config["remove_marks"])
-n_feats_pcres = config['pcres_feats_basic_nums'] 
-d_emb = config["embed"]["d_model"]
-embed_kws = config["embed"]
-pairwise_interaction_kws = config["pairwise_interaction"]
-regulation_kws = config["regulation"]
-d_head = config["d_head"]
-targets = ['bs_label','bf_label']
-npy_dir = "extra/datasets/processed/v1"
+    n_feats_p = config['promoter_feats_basic_nums'] - len(config["remove_marks"])  + feature_bin_kws['out_channels'] if add_feature_bin else config['promoter_feats_basic_nums'] - len(config["remove_marks"])
+    n_feats_pcres = config['pcres_feats_basic_nums'] 
+    d_emb = config["embed"]["d_model"]
+    embed_kws = config["embed"]
+    pairwise_interaction_kws = config["pairwise_interaction"]
+    regulation_kws = config["regulation"]
+    d_head = config["d_head"]
+    targets = ['bs_label','bf_label']
+    npy_dir = "extra/datasets/processed/v1"
 
 
-binsizes = [500]
+    binsizes = [500]
 
-# eid = "E116"
-# fold = 0
-# remove_marks = "remove_H3K9me3."
-with open("extra/datasets/results/cell_type_agnostic_bs_bf_para.csv",'w') as w:
-    columns = ['bs_auc','bf_auc','fold','eid']
-    w.write('\t'.join(columns)+'\n')
-    for eid in ["E116","E118","E003"]:
+    for window_size in [1000,2000,5000,10000,20000,40000]:
+        n_bins = window_size // (500*2)
+        keep_bins = range(40-n_bins,40+n_bins)
+
+        config['perturbation_strength'] = 0
+        config['marked_bin_idxes'] = [i for i in range(80) if i not in keep_bins]
         for fold in [0,1,2,3]:
             print(f"eid:{eid},fold:{fold}")
-            # checkpoints = f"checkpoints/{eid}.{fold}.model.pt"
-            checkpoints = f"checkpoints/agnostic.{fold}.No_feature_bin.bs_bf_para.model.pt"
+            checkpoints = f"checkpoints/{eid}.{fold}.No_feature_bin.bs_bf_para.model.pt"
+
             meta_path = f"extra/datasets/processed/v1/meta_datasets/meta_data_{eid}.csv"
+
+            #
+            # Setup end.
+            #
 
             seed_everything(seed)
             meta = (
@@ -111,8 +110,6 @@ with open("extra/datasets/results/cell_type_agnostic_bs_bf_para.csv",'w') as w:
                 qs[(fold + 0) % 4] + qs[(fold + 1) % 4] + qs[(fold + 2) % 4]
             )
             val_genes = qs[(fold + 3) % 4]
-
-
 
             print(len(train_genes), len(val_genes))
 
@@ -165,9 +162,7 @@ with open("extra/datasets/results/cell_type_agnostic_bs_bf_para.csv",'w') as w:
                             d[k] = v.to(DEVICE)
 
                     out = model(
-                        # d['promoter_seq'],
                         d["promoter_feats"][500],
-                        d["promoter_pad_masks"][500],
                     )
                     val_out.append(out.cpu())
 
@@ -187,25 +182,31 @@ with open("extra/datasets/results/cell_type_agnostic_bs_bf_para.csv",'w') as w:
 
             # Metrics.
 
-            ckpt = {}
-            ckpt['gene_id'] = gene_ids
             description = ""
-            line = []
+            records = {}
+            records['gene_id'] = gene_ids
             for target in targets:
                 val_score, val_label, val_pred, val_acc, val_auc, val_ap = evaluation(val_preds[target],val_labels[target])
 
-                ckpt[f'{target}_label'] = val_label
-                ckpt[f'{target}_score'] = val_score
-                ckpt[f'{target}_pred'] = val_pred
-                ckpt[f'{target}_val_acc'] = val_acc
-                ckpt[f'{target}_val_auc'] = val_auc
-                ckpt[f'{target}_val_ap'] = val_ap       
+                records[f'{target}_label'] = val_label.cpu().numpy().squeeze()
+                records[f'{target}_score'] = val_score.cpu().numpy().squeeze()
+                records[f'{target}_pred'] = val_pred.cpu().numpy().squeeze()     
                 description += f"{target}: acc={val_acc:.4f}, auc={val_auc:.4f}, ap={val_ap:.4f} " 
-                line.append(str(ckpt[f'{target}_val_auc']))
+            
+            records['eid'] = eid
+            records['fold'] = fold
+            records['window_size'] = window_size
+            df = pd.DataFrame(records)
+            predictions.append(df)
 
-            line += [str(fold),eid]
-            w.write('\t'.join(line)+'\n')
+            print(description)
+
+    print(f'EID:{eid}, Done')
+predictions = pd.concat(predictions,axis=0)
+
+predictions.to_csv(f"extra/datasets/results/distance_region_predictions_bs_bf.csv",index=False)
+
 
 
 if __name__ == '__main__':
-    print("Done")
+    print('Done')

@@ -6,11 +6,11 @@ import pandas as pd
 from tqdm import tqdm
 from sklearn import metrics
 import seaborn as sns
-from src.model.data import BurstPrismaDataset
-from src.model.net import  BurstPrisma
+from benchmark.Promoterformer.data import BurstformerDataset
+from benchmark.Promoterformer.net import  ChromoformerClassifier
 from src.utils.tools import seed_everything
 from src.utils.constants import DEVICE
-from src.model.constants import get_config
+from benchmark.Promoterformer.constants import get_config
 
 
 torch.autograd.set_detect_anomaly(True)
@@ -42,7 +42,7 @@ config["remove_marks"] = []
 config['marked_bin_idxes'] = []
 config['masked_marks'] = []
 
-
+feature_bin_kws = config['feature_bin_kws']
 seed = config["seed"]
 
 bsz = config["bsz"]
@@ -53,10 +53,11 @@ w_prom = config["w_prom"]
 w_max = config["w_max"]
 
 n_feats_p = config['promoter_feats_basic_nums']  + feature_bin_kws['out_channels'] - len(config["remove_marks"]) if add_feature_bin else config['promoter_feats_basic_nums'] - len(config["remove_marks"])
-
+n_feats_pcres = config['pcres_feats_basic_nums'] 
 d_emb = config["embed"]["d_model"]
 embed_kws = config["embed"]
-
+pairwise_interaction_kws = config["pairwise_interaction"]
+regulation_kws = config["regulation"]
 d_head = config["d_head"]
 targets = ['mean_label']
 npy_dir = "extra/datasets/processed/v1"
@@ -64,17 +65,13 @@ npy_dir = "extra/datasets/processed/v1"
 
 binsizes = [500]
 
-# eid = "E116"
-# fold = 0
-# remove_marks = "remove_H3K9me3."
-with open("extra/datasets/results/valid_mean_para.csv",'w') as w:
+with open("extra/datasets/results/cell_type_agnostic_mean_para.csv",'w') as w:
     columns = ['mean_auc','fold','eid']
     w.write('\t'.join(columns)+'\n')
     for eid in ["E116","E118","E003"]:
         for fold in [0,1,2,3]:
             print(f"eid:{eid},fold:{fold}")
-            # checkpoints = f"checkpoints/{eid}.{fold}.model.pt"
-            checkpoints = f"checkpoints/agnostic.{fold}.mean_para.model.pt"
+            checkpoints = f"checkpoints/agnostic.{fold}.No_feature_bin.mean_para.model.pt"
             meta_path = f"extra/datasets/processed/v1/meta_datasets/meta_data_{eid}.csv"
 
             #
@@ -120,7 +117,7 @@ with open("extra/datasets/results/valid_mean_para.csv",'w') as w:
 
             print(len(train_genes), len(val_genes))
 
-            val_dataset = BurstPrismaDataset(
+            val_dataset = BurstformerDataset(
                 meta_path,
                 npy_dir,
                 val_genes,
@@ -134,7 +131,7 @@ with open("extra/datasets/results/valid_mean_para.csv",'w') as w:
             )
             val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=bsz)
 
-            model = BurstPrisma(
+            model = ChromoformerClassifier(
                 n_feats_p,
                 n_feats_pcres,
                 d_emb,
@@ -169,7 +166,6 @@ with open("extra/datasets/results/valid_mean_para.csv",'w') as w:
                             d[k] = v.to(DEVICE)
 
                     out = model(
-                        # d['promoter_seq'],
                         d["promoter_feats"][500],
                         d["promoter_pad_masks"][500],
                     )
