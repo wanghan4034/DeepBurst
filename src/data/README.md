@@ -8,10 +8,8 @@ Below we show examples for the **H1 (E003) cell line**.
 
 ## **Dependencies**
 
-- Python ≥ 3.8
+- Python ≥ 3.10
 - Required packages:
-
-
 
 ```
 pip install numpy pandas scipy scikit-learn
@@ -48,8 +46,7 @@ Burst frequency (BF) and burst size (BS) are computed from UMI counts.
 **Step 1 – Extract UMI counts:**
 
 ```
-nohup python src/data/burst/extract_umi_counts.py --cell_type H1 \
-    > logs/E003.extract_umi_counts.log 2>&1 &
+python src/data/burst/extract_umi_counts.py --cell_type H1
 ```
 
 - Output: UMI count matrix (.csv)
