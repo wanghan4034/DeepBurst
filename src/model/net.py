@@ -155,7 +155,8 @@ class BurstPrisma(nn.Module):
 if __name__ == "__main__":
     # import data
     # model_regressor = ChromoformerRegressor().to(DEVICE)
-    model = BurstPrisma(targets=['bs_label','bf_label']).to(DEVICE)    
+    model = BurstPrisma(binsizes=[500],targets=['bs_label','bf_label']).to(DEVICE)    
+    print(model)
 
     # Dummy data.
     bsz = 8
@@ -174,6 +175,8 @@ if __name__ == "__main__":
     )
 
     print(result.shape)
+    from torchinfo import summary
+    summary(model,[1,1,80,7])
     # -0.1900, [8, 1]
 
     # ckpt = torch.load("test.pt")
@@ -183,3 +186,19 @@ if __name__ == "__main__":
     #     "checkpoints/burst.bf.E116.reg.model.pt"
     # )
     # model_regressor.load_state_dict(ckpt["net"])
+    # import torch.onnx
+    
+    # import netron
+
+    # d = torch.rand(1, 1, 80, 7)    
+
+    # onnx_path = "onnx_model_name.onnx"
+    # torch.onnx.export(model, d, onnx_path)
+    
+    # netron.start(onnx_path)
+    from torchview import draw_graph
+
+    model_graph = draw_graph(model, input_size=(1, 1, 80, 7), save_graph=True, expand_nested=True)
+
+
+

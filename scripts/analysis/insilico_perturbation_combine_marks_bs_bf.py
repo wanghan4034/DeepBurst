@@ -1,0 +1,216 @@
+import torch
+import pandas as pd
+from tqdm import tqdm
+from sklearn import metrics
+from src.model.data import BurstPrismaDataset
+from src.model.net import  BurstPrisma
+from src.utils.tools import seed_everything
+from src.utils.constants import DEVICE
+from src.model.constants import get_config, MARKS, PERTURBATION_REGION, PERTURBATION_STRENGTH
+
+
+
+# MARKS = ["H3K4me1","H3K4me3","H3K9me3","H3K27me3","H3K36me3","H3K27ac","H3K9ac"]
+torch.autograd.set_detect_anomaly(True)
+
+def get_lr(optimizer):
+    for param_group in optimizer.param_groups:
+        return param_group["lr"]
+
+def evaluation(out:'torch.Tensor', label:'torch.Tensor'):
+    score = out.softmax(axis=1)[:, 1]
+    pred = out.argmax(axis=1)
+
+    acc = metrics.accuracy_score(label, pred) * 100
+    auc = metrics.roc_auc_score(label, score) * 100
+    ap = metrics.average_precision_score(label, score) * 100
+    return score, label, pred, acc, auc, ap
+
+config_path = "benchmark/Promoterformer/configs/default.yaml"
+config = get_config(config_path)
+add_feature_bin = False
+
+predictions = []
+for eid in ["E116","E118","E003"]:
+    keep_marks = ['H3K27me3','H3K9ac']
+    # masked_marks = keep_marks
+    marked_bin_idxes = [i for i in range(80)]
+    # config['marked_bin_idxes'] = marked_bin_idxes
+    config['masked_marks'] = {}
+    print(f'EID:{eid}, keep_mark:{keep_marks}')
+    for masked_mark in keep_marks:
+        config['masked_marks'][masked_mark] = {PERTURBATION_REGION:marked_bin_idxes, PERTURBATION_STRENGTH:1}
+
+    remove_marks = [mark for mark in MARKS if mark not in keep_marks]
+    config["remove_marks"] = remove_marks
+    model_tag = '_'.join(keep_marks)
+
+    seed = config["seed"]
+
+    bsz = config["bsz"]
+    gamma = config["gamma"]
+
+    i_max = config["i_max"]
+    w_prom = config["w_prom"]
+    w_max = config["w_max"]
+
+    n_feats_p = config['promoter_feats_basic_nums'] - len(config["remove_marks"])
+    n_feats_pcres = config['pcres_feats_basic_nums'] 
+    d_emb = config["embed"]["d_model"]
+    embed_kws = config["embed"]
+    pairwise_interaction_kws = config["pairwise_interaction"]
+    regulation_kws = config["regulation"]
+    d_head = config["d_head"]
+    targets = ['bs_label','bf_label']
+    npy_dir = "extra/datasets/processed/v1"
+
+
+    binsizes = [500]
+
+
+    for perturbation_strength in range(11):
+        for masked_mark in keep_marks:
+            config['masked_marks'][masked_mark][PERTURBATION_STRENGTH] = perturbation_strength * 0.1
+
+        for fold in [0,1,2,3]:
+            print(f"eid:{eid},fold:{fold}")
+            checkpoints = f"benchmark/Promoterformer/checkpoints/{eid}.keep_{model_tag}.{fold}.No_feature_bin.bs_bf_para.model.pt"
+
+            meta_path = f"extra/datasets/processed/v1/meta_datasets/meta_data_{eid}.csv"
+
+            #
+            # Setup end.
+            #
+
+            seed_everything(seed)
+            meta = (
+                pd.read_csv(meta_path).sample(frac=1, random_state=seed).reset_index(drop=True)
+            )  # load and shuffle.
+
+            # Split genes into two sets (train/val).
+            genes = set(meta.gene_id.unique())
+            n_genes = len(genes)
+            print("Target genes:", len(genes))
+            print(f"n_feats_p:{n_feats_p}")
+
+            splits = {
+                1: ['chr1', 'chr6', 'chr5', 'chr8', 'chr14', 'chrY'],
+                2: ['chr7', 'chr10', 'chr11', 'chr12', 'chr15', 'chr21'],
+                3: ['chr2', 'chr3', 'chr4', 'chr16', 'chr18', 'chr20'],
+                4: ['chr9', 'chr13', 'chr17', 'chr19', 'chr22', 'chrX'],
+            }
+
+            chromosome_splits = {}
+            for key, chroms in splits.items():
+                for chrom in chroms:
+                    chromosome_splits[chrom] = key
+
+            qs = [
+                meta[meta.apply(lambda row: chromosome_splits[row['chrom']] == 1,axis=1)].gene_id.tolist(),
+                meta[meta.apply(lambda row: chromosome_splits[row['chrom']] == 2,axis=1)].gene_id.tolist(),
+                meta[meta.apply(lambda row: chromosome_splits[row['chrom']] == 3,axis=1)].gene_id.tolist(),
+                meta[meta.apply(lambda row: chromosome_splits[row['chrom']] == 4,axis=1)].gene_id.tolist(),
+            ]
+
+            train_genes = (
+                qs[(fold + 0) % 4] + qs[(fold + 1) % 4] + qs[(fold + 2) % 4]
+            )
+            val_genes = qs[(fold + 3) % 4]
+
+            print(len(train_genes), len(val_genes))
+
+            val_dataset = BurstPrismaDataset(
+                meta_path,
+                npy_dir,
+                val_genes,
+                i_max,
+                binsizes,
+                w_prom,
+                w_max,
+                targets=targets,
+                config = config,
+                with_gene_id=True
+            )
+            val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=bsz)
+
+            model = BurstPrisma(
+                n_feats_p,
+                d_emb,
+                d_head,
+                embed_kws=embed_kws,
+                binsizes=binsizes,
+                seed=42,
+                targets=targets,
+            ).to(DEVICE)
+
+            ckpt = torch.load(checkpoints,map_location=DEVICE)
+            model.load_state_dict(ckpt["net"])
+
+            # bf Test data evaluation
+            # Prepare validation.
+            bar = tqdm(enumerate(val_loader, 1), total=len(val_loader))
+            gene_ids, val_out, val_label = [], [], []
+
+
+            # Validation.
+            model.eval()
+            with torch.no_grad():
+                for batch, d in bar:
+                    gene_ids += d.pop('gene_id')
+                    for k, v in d.items():
+                        if isinstance(v, dict):
+                            for _k, _v in v.items():
+                                v[_k] = _v.to(DEVICE)
+                        else:
+                            d[k] = v.to(DEVICE)
+
+                    out = model(
+                        d["promoter_feats"][500],
+                    )
+                    val_out.append(out.cpu())
+
+                    val_label.append(d["label"].cpu())
+
+            val_out = torch.cat(val_out)
+            val_label = torch.cat(val_label)
+
+
+            val_preds = {}
+            for target, pred in zip(targets,torch.chunk(val_out, len(targets), axis=-1)):
+                val_preds[target] = pred
+            
+            val_labels = {}
+            for target, label in zip(targets,torch.chunk(val_label, len(targets), axis=-1)):
+                val_labels[target] = label   
+
+            # Metrics.
+
+            description = ""
+            records = {}
+            records['gene_id'] = gene_ids
+            for target in targets:
+                val_score, val_label, val_pred, val_acc, val_auc, val_ap = evaluation(val_preds[target],val_labels[target])
+
+                records[f'{target}_label'] = val_label.cpu().numpy().squeeze()
+                records[f'{target}_score'] = val_score.cpu().numpy().squeeze()
+                records[f'{target}_pred'] = val_pred.cpu().numpy().squeeze()     
+                description += f"{target}: acc={val_acc:.4f}, auc={val_auc:.4f}, ap={val_ap:.4f} " 
+            
+            records['fold'] = fold
+            records['eid'] = eid
+            records['keep_mark'] = model_tag
+            records['perturbation_strength'] = perturbation_strength
+            df = pd.DataFrame(records)
+            predictions.append(df)
+
+            print(description)
+
+    print(f'EID:{eid}, keep_mark:{model_tag} Done')
+predictions = pd.concat(predictions,axis=0)
+
+# predictions.to_csv(f"extra/datasets/benchmark/Promoterformer/results/keep_{model_tag}_perturbation_predictions_bs_bf.csv",index=False)
+
+
+
+if __name__ == '__main__':
+    print('Done')
