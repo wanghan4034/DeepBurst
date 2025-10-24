@@ -4,4 +4,4 @@ nohup python src/data/data_process.py --eid E118 --gene extra/datasets/genomic/h
 nohup python src/data/data_process.py --eid E116 --gene extra/datasets/genomic/hg19/genes.bed  --epi_dir extra/datasets/epigenetic/hg19 -o  extra/datasets/processed/v2 > logs/E116_data_process.log 2>&1 &
 
 # Prepare labels
-bash src/data/burst/scripts/run.sh
+bash src/data/burst/run.sh

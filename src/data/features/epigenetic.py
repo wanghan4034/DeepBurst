@@ -87,7 +87,7 @@ class BigWigInfo:
         return results
 
 if __name__ == '__main__':
-    from src.data.genomics import get_genomic_slice
+    from src.data.features.genomics import get_genomic_slice
     file_paths = ['extra/datasets/epigenetic/E003-H3K4me1.bw']
     bigwig_info = BigWigInfo(file_paths)
     genomic_slice = get_genomic_slice('chr6',37321757,37321758)

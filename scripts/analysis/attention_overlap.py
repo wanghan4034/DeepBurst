@@ -4,7 +4,7 @@ import numpy as np
 from tqdm import tqdm
 from intervaltree import IntervalTree
 from typing import List
-from src.data.genomics import get_cres_infos, get_gene_infos
+from src.data.features.genomics import get_cres_infos, get_gene_infos
 from src.model.data import BurstPrismaDataset
 from src.model.net import BurstPrisma
 from src.utils.constants import DEVICE
