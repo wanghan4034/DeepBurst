@@ -7,8 +7,8 @@ import pandas as pd
 from tqdm import tqdm
 from sklearn import metrics
 
-from src.model.data import BurstPrismaDataset
-from src.model.net import BurstPrisma
+from src.model.data import BurstformerDataset
+from src.model.net import ChromoformerClassifier
 from src.utils.tools import seed_everything
 from src.utils.constants import DEVICE
 from src.model.constants import get_config, MARKS, PERTURBATION_STRENGTH, PERTURBATION_REGION
@@ -45,7 +45,7 @@ MASK_REGION     = "all"            # 也可改成 bin 索引列表，如 [10,11,
 BINSIZES        = [500]
 
 # 其他训练/评测设置
-config_path = "benchmark/Promoterformer/configs/default.yaml"
+config_path = "configs/default.yaml"
 config_base = get_config(config_path)
 add_feature_bin = False
 
@@ -121,7 +121,7 @@ for eid in ["E116", "E118", "E003"]:
     for fold in [0, 1, 2, 3]:
         print(f"\n==== eid:{eid}, fold:{fold} ====")
 
-        checkpoints = f"benchmark/Promoterformer/checkpoints/{eid}.{fold}.No_feature_bin.bs_bf_para.model.pt"
+        checkpoints = f"checkpoints/{eid}.{fold}.No_feature_bin.bs_bf_para.model.pt"
 
         meta_path = f"extra/datasets/processed/v1/meta_datasets/meta_data_{eid}.csv"
 
@@ -149,7 +149,7 @@ for eid in ["E116", "E118", "E003"]:
         print(f"Train/Val gene counts: {len(train_genes)}/{len(val_genes)} | n_feats_p={n_feats_p}")
 
         # ——— 加载模型（一次） ——— #
-        model = BurstPrisma(
+        model = ChromoformerClassifier(
             n_feats_p,
             d_emb,
             d_head,
@@ -170,7 +170,7 @@ for eid in ["E116", "E118", "E003"]:
             config["masked_marks"] = build_masked_marks(mask_tuple, strength=MASK_STRENGTH, region=MASK_REGION)
 
             # DataLoader
-            val_dataset = BurstPrismaDataset(
+            val_dataset = BurstformerDataset(
                 meta_path,
                 npy_dir,
                 val_genes,
@@ -236,7 +236,7 @@ for eid in ["E116", "E118", "E003"]:
 predictions = pd.concat(predictions, axis=0).reset_index(drop=True)
 
 # 保存（按需要解注释）
-out_csv = f"extra/datasets/benchmark/Promoterformer/results/perturbation_masks_mode-{MASK_MODE}-masks_strength-{MASK_STRENGTH}.csv"
+out_csv = f"extra/datasets/results/perturbation_masks_mode-{MASK_MODE}-masks_strength-{MASK_STRENGTH}.csv"
 predictions.to_csv(out_csv, index=False)
 print("Saved to:", out_csv)
 

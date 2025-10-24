@@ -59,7 +59,8 @@ class EmbeddingTransformer(nn.Module):
         return x, x[:, :, max_n_bins // 2]
 
 
-class BurstPrisma(nn.Module):
+
+class ChromoformerClassifier(nn.Module):
     def __init__(
         self,
         n_feats_p=7,
@@ -75,7 +76,7 @@ class BurstPrisma(nn.Module):
         seed=42,
         targets = None,
     ):
-        super(BurstPrisma, self).__init__()
+        super(ChromoformerClassifier, self).__init__()
         torch.manual_seed(seed)
 
         # Update arguments for each transformer layer.
@@ -83,7 +84,6 @@ class BurstPrisma(nn.Module):
         embed_kws["d_model"] = d_emb
 
         self.binsizes = binsizes
-
         self.embed = nn.ModuleDict(
             {str(binsize): EmbeddingTransformer(**embed_kws) for binsize in binsizes}
         )
@@ -116,6 +116,7 @@ class BurstPrisma(nn.Module):
         }
 
         x = torch.cat([x_in[binsize][:, 0] for binsize in self.binsizes], axis=1)
+        # burst_size, burst_frequency = torch.chunk(self.fc_head(x),len(targets),dim=-1)
 
         return  self.fc_head(x)
 
@@ -153,10 +154,9 @@ class BurstPrisma(nn.Module):
 
 
 if __name__ == "__main__":
-    # import data
-    # model_regressor = ChromoformerRegressor().to(DEVICE)
-    model = BurstPrisma(binsizes=[500],targets=['bs_label','bf_label']).to(DEVICE)    
-    print(model)
+
+    targets = ['bf', 'bs']
+    model = ChromoformerClassifier(targets=targets).to(DEVICE)    
 
     # Dummy data.
     bsz = 8
@@ -167,16 +167,92 @@ if __name__ == "__main__":
         torch.randn([bsz, 1, 80, 7]),
         torch.randn([bsz, 1, 400, 7]),
     )
-
-    x_p_2000, x_p_500, x_p_100 = x_p_2000.to(DEVICE), x_p_500.to(DEVICE), x_p_100.to(DEVICE)
-
-    result = model(
-        x_p_500,
+    x_pcre_2000, x_pcre_500, x_pcre_100 = (
+        torch.randn([bsz, i_max, 20, 7]),
+        torch.randn([bsz, i_max, 80, 7]),
+        torch.randn([bsz, i_max, 400, 7]),
     )
 
-    print(result.shape)
-    from torchinfo import summary
-    summary(model,[1,1,80,7])
+    pad_mask_p_2000, pad_mask_p_500, pad_mask_p_100 = (
+        torch.randn([bsz, 1, 1, 20, 20]).bool(),
+        torch.randn([bsz, 1, 1, 80, 80]).bool(),
+        torch.randn([bsz, 1, 1, 400, 400]).bool(),
+    )
+    pad_mask_pcre_2000, pad_mask_pcre_500, pad_mask_pcre_100 = (
+        torch.randn([bsz, i_max, 1, 20, 20]).bool(),
+        torch.randn([bsz, i_max, 1, 80, 80]).bool(),
+        torch.randn([bsz, i_max, 1, 400, 400]).bool(),
+    )
+
+    interaction_mask_2000, interaction_mask_500, interaction_mask_100 = (
+        torch.randn([bsz, 1, 1 + i_max, 1 + i_max]).bool(),
+        torch.randn([bsz, 1, 1 + i_max, 1 + i_max]).bool(),
+        torch.randn([bsz, 1, 1 + i_max, 1 + i_max]).bool(),
+    )
+    interaction_freq = torch.randn([bsz, 1 + i_max, 1 + i_max])
+
+    x_p_2000, x_p_500, x_p_100 = x_p_2000.to(DEVICE), x_p_500.to(DEVICE), x_p_100.to(DEVICE)
+    x_pcre_2000, x_pcre_500, x_pcre_100 = (
+        x_pcre_2000.to(DEVICE),
+        x_pcre_500.to(DEVICE),
+        x_pcre_100.to(DEVICE),
+    )
+
+    pad_mask_p_2000, pad_mask_p_500, pad_mask_p_100 = (
+        pad_mask_p_2000.to(DEVICE),
+        pad_mask_p_500.to(DEVICE),
+        pad_mask_p_100.to(DEVICE),
+    )
+    pad_mask_pcre_2000, pad_mask_pcre_500, pad_mask_pcre_100 = (
+        pad_mask_pcre_2000.to(DEVICE),
+        pad_mask_pcre_500.to(DEVICE),
+        pad_mask_pcre_100.to(DEVICE),
+    )
+
+    interaction_mask_2000, interaction_mask_500, interaction_mask_100 = (
+        interaction_mask_2000.to(DEVICE),
+        interaction_mask_500.to(DEVICE),
+        interaction_mask_100.to(DEVICE),
+    )
+    interaction_freq = interaction_freq.to(DEVICE)
+
+
+
+    promoter_feats = {
+        2000: x_p_2000,
+        500: x_p_500,
+        100: x_p_100,
+    }
+    promoter_pad_masks = {
+        2000: pad_mask_p_2000,
+        500: pad_mask_p_500,
+        100: pad_mask_p_100,
+    }
+    pcre_feats = {
+        2000: x_pcre_2000,
+        500: x_pcre_500,
+        100: x_pcre_100,
+    }
+    pcre_pad_masks = {
+        2000: pad_mask_pcre_2000,
+        500: pad_mask_pcre_500,
+        100: pad_mask_pcre_100,
+    }
+    interaction_masks = {
+        2000: interaction_mask_2000,
+        500: interaction_mask_500,
+        100: interaction_mask_100,
+    }
+
+
+
+    bs, bf = model(
+        promoter_feats,
+        promoter_pad_masks,
+    )
+
+    print(bs.sum())
+    print(bs.shape)
     # -0.1900, [8, 1]
 
     # ckpt = torch.load("test.pt")
@@ -186,19 +262,3 @@ if __name__ == "__main__":
     #     "checkpoints/burst.bf.E116.reg.model.pt"
     # )
     # model_regressor.load_state_dict(ckpt["net"])
-    # import torch.onnx
-    
-    # import netron
-
-    # d = torch.rand(1, 1, 80, 7)    
-
-    # onnx_path = "onnx_model_name.onnx"
-    # torch.onnx.export(model, d, onnx_path)
-    
-    # netron.start(onnx_path)
-    from torchview import draw_graph
-
-    model_graph = draw_graph(model, input_size=(1, 1, 80, 7), save_graph=True, expand_nested=True)
-
-
-

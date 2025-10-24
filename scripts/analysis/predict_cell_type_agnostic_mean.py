@@ -6,8 +6,8 @@ import pandas as pd
 from tqdm import tqdm
 from sklearn import metrics
 import seaborn as sns
-from src.model.data import BurstPrismaDataset
-from src.model.net import  BurstPrisma
+from src.model.data import BurstformerDataset
+from src.model.net import  ChromoformerClassifier
 from src.utils.tools import seed_everything
 from src.utils.constants import DEVICE
 from src.model.constants import get_config
@@ -32,7 +32,7 @@ def evaluation(out:'torch.Tensor', label:'torch.Tensor'):
     ap = metrics.average_precision_score(label, score) * 100
     return score, label, pred, acc, auc, ap
 
-config_path = "benchmark/Promoterformer/configs/default.yaml"
+config_path = "configs/default.yaml"
 config = get_config(config_path)
 add_feature_bin = False
 
@@ -42,7 +42,7 @@ config["remove_marks"] = []
 config['marked_bin_idxes'] = []
 config['masked_marks'] = []
 
-feature_bin_kws = config['feature_bin_kws']
+
 seed = config["seed"]
 
 bsz = config["bsz"]
@@ -65,13 +65,13 @@ npy_dir = "extra/datasets/processed/v1"
 
 binsizes = [500]
 
-with open("extra/datasets/benchmark/Promoterformer/results/cell_type_agnostic_mean_para.csv",'w') as w:
+with open("extra/datasets/results/cell_type_agnostic_mean_para.csv",'w') as w:
     columns = ['mean_auc','fold','eid']
     w.write('\t'.join(columns)+'\n')
     for eid in ["E116","E118","E003"]:
         for fold in [0,1,2,3]:
             print(f"eid:{eid},fold:{fold}")
-            checkpoints = f"benchmark/Promoterformer/checkpoints/agnostic.{fold}.No_feature_bin.mean_para.model.pt"
+            checkpoints = f"checkpoints/agnostic.{fold}.No_feature_bin.mean_para.model.pt"
             meta_path = f"extra/datasets/processed/v1/meta_datasets/meta_data_{eid}.csv"
 
             #
@@ -117,7 +117,7 @@ with open("extra/datasets/benchmark/Promoterformer/results/cell_type_agnostic_me
 
             print(len(train_genes), len(val_genes))
 
-            val_dataset = BurstPrismaDataset(
+            val_dataset = BurstformerDataset(
                 meta_path,
                 npy_dir,
                 val_genes,
@@ -131,17 +131,17 @@ with open("extra/datasets/benchmark/Promoterformer/results/cell_type_agnostic_me
             )
             val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=bsz)
 
-            model = BurstPrisma(
+            model = ChromoformerClassifier(
                 n_feats_p,
-                n_feats_pcres,
+                
                 d_emb,
                 d_head,
-                feature_bin_kws=feature_bin_kws,
+                
                 embed_kws=embed_kws,
                 binsizes=binsizes,
                 seed=42,
                 targets=targets,
-                add_feature_bin = add_feature_bin,
+                
             ).to(DEVICE)
 
             ckpt = torch.load(checkpoints,map_location=DEVICE)

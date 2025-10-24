@@ -100,13 +100,6 @@ def read_data(root_data_path, cell_type):
     elif cell_type == "OPC_mouse":
         data_dir = os.path.join(root_data_path, "OPC_mouse")
         genes_type = "features"
-
-    # Load gene transcript region information
-    # gene_transcript_region_path = "{}/gene_transcript_region.txt".format(root_data_path)
-    # gene_transcript_region = pd.read_csv(gene_transcript_region_path, header=None, sep='\t')
-    # gene_transcript_region.columns = ["gene_code", "chr", "start", "end"]
-    # gene_transcript_region = gene_transcript_region.drop_duplicates(subset=['gene_code'], keep='first')
-    # Load and preprocess the data
     if cell_type == "HepG2":
         data_df = pd.read_csv(os.path.join(data_dir ,"HepG2_RNA.txt"), sep='\t').T
     elif cell_type == "OPC_human":
@@ -121,7 +114,6 @@ def read_data(root_data_path, cell_type):
         data_df = pd.read_csv(os.path.join(data_dir ,"H1_primed_RNA.csv"), sep=',',index_col=0).T
     elif cell_type == "gm12878":
         adata = load_data(data_dir, genes_type=genes_type)
-        # Convert AnnData to DataFrame
         data_df = pd.DataFrame(adata.X.toarray(), columns=adata.var_names, index=adata.obs_names)
     else:
         raise ValueError(f"No target cell type:{cell_type}")

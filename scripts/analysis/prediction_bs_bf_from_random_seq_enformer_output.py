@@ -3,7 +3,7 @@ import pandas as pd
 from tqdm import tqdm
 from sklearn import metrics
 from src.model.data import EnformerDataset
-from src.model.net import  BurstPrisma
+from src.model.net import  ChromoformerClassifier
 from src.utils.tools import seed_everything
 from src.utils.constants import DEVICE
 from src.model.constants import get_config
@@ -29,7 +29,7 @@ def evaluation(out:'torch.Tensor', label:'torch.Tensor'):
     ap = metrics.average_precision_score(label, score) * 100
     return score, label, pred, acc, auc, ap
 
-config_path = "benchmark/Promoterformer/configs/default.yaml"
+config_path = "configs/default.yaml"
 config = get_config(config_path)
 add_feature_bin = False
 
@@ -39,7 +39,7 @@ if remove_marks:
 else:
     config["remove_marks"] = []
 
-feature_bin_kws = config['feature_bin_kws']
+
 seed = config["seed"]
 
 config['marked_bin_idxes'] = []
@@ -52,7 +52,7 @@ i_max = config["i_max"]
 w_prom = config["w_prom"]
 w_max = config["w_max"]
 
-n_feats_p = config['promoter_feats_basic_nums'] - len(config["remove_marks"])  + feature_bin_kws['out_channels'] if add_feature_bin else config['promoter_feats_basic_nums'] - len(config["remove_marks"])
+n_feats_p = config['promoter_feats_basic_nums'] - len(config["remove_marks"])
 n_feats_pcres = config['pcres_feats_basic_nums'] 
 d_emb = config["embed"]["d_model"]
 embed_kws = config["embed"]
@@ -70,7 +70,7 @@ predictions = []
 for eid in ["E003"]:
     for fold in [0,1,2,3]:
         print(f"eid:{eid},fold:{fold}")
-        checkpoints = f"benchmark/Promoterformer/checkpoints/{eid}.{fold}.No_feature_bin.bs_bf_para.model.pt"
+        checkpoints = f"checkpoints/{eid}.{fold}.No_feature_bin.bs_bf_para.model.pt"
 
         meta_path = f"extra/datasets/processed/v1/random_seq_enformer_prediction/random_sample_prediction_index.csv"
 
@@ -121,7 +121,7 @@ for eid in ["E003"]:
         val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=bsz)
 
 
-        model = BurstPrisma(
+        model = ChromoformerClassifier(
             n_feats_p,
             d_emb,
             d_head,
@@ -190,7 +190,7 @@ for eid in ["E003"]:
         print(description)
 
 predictions = pd.concat(predictions,axis=0)
-predictions.to_csv(f'extra/datasets/benchmark/Promoterformer/results/predictions_bs_bf_from_random_seq_enformer_output.csv',index=False)
+predictions.to_csv(f'extra/datasets/results/predictions_bs_bf_from_random_seq_enformer_output.csv',index=False)
 
 
 if __name__ == '__main__':

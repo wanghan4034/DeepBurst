@@ -29,14 +29,6 @@ parser.add_argument('-o','--output', required=True, help='Input tissue.')
 
 args = parser.parse_args()
 
-
-# eid = 'E003'
-# genes_bed_path = f'extra/datasets/genomic/genes.bed' # load genes with TSS
-# frag_data_path = f'extra/datasets/pcHi-C/hg19/GM.txt' # hic interact fragment file
-# epigenetic_dir = 'extra/datasets/epigenetic/hg19'
-# saved_dir = f'extra/datasets/processed/v1' # saved dir 
-# max_neighbors = 8
-
 eid = args.eid
 genes_bed_path = args.gene
 frag_data_path = args.hic
@@ -64,18 +56,12 @@ if not os.path.exists(saved_dir):
 if not os.path.exists(npy_saved_dir):
     os.makedirs(npy_saved_dir, exist_ok=True)
 
-# frag_data = pickle.load(open(os.path.join(saved_dir,f'{eid}_frag_data.pkl'),'rb'))
 
 if frag_data_path:
     frag_data = FragData(frag_data_path)
 else:
     frag_data = None
 
-# with open(os.path.join(saved_dir,f'{eid}_frag_data.pkl'),'wb') as w:
-#     pickle.dump(frag_data,w)
-#     logger.info(f"The frag_data object has been dumpped in {eid}_frag_data.pkl")
-
-# genomic_info = pickle.load(open(os.path.join(saved_dir,f'{eid}_genomic_info.pkl'),'rb'))
 
 genomic_info = GenomicInfo(genes_bed_path,frag_data)
 

@@ -5,8 +5,8 @@ from tqdm import tqdm
 from intervaltree import IntervalTree
 from typing import List
 from src.data.features.genomics import get_cres_infos, get_gene_infos
-from src.model.data import BurstPrismaDataset
-from src.model.net import BurstPrisma
+from src.model.data import BurstformerDataset
+from src.model.net import ChromoformerClassifier
 from src.utils.constants import DEVICE
 
 
@@ -23,8 +23,8 @@ from typing import List
 import seaborn as sns
 import matplotlib.pyplot as plt
 from matplotlib import rcParams, rcParamsDefault
-from src.model.data import BurstPrismaDataset
-from src.model.net import  BurstPrisma
+from src.model.data import BurstformerDataset
+from src.model.net import  ChromoformerClassifier
 from src.utils.tools import seed_everything
 from src.utils.constants import DEVICE
 from src.model.constants import get_config
@@ -41,7 +41,7 @@ def get_lr(optimizer):
 #
 # Training setup.
 #
-config_path = "benchmark/Promoterformer/configs/default.yaml"
+config_path = "configs/default.yaml"
 config = get_config(config_path)
 config['masked_marks'] = []
 # add_feature_bin = True
@@ -55,7 +55,7 @@ if remove_marks:
 else:
     config["remove_marks"] = []
 
-feature_bin_kws = config['feature_bin_kws']
+
 seed = config["seed"]
 
 bsz = config["bsz"]
@@ -65,7 +65,7 @@ i_max = config["i_max"]
 w_prom = config["w_prom"]
 w_max = config["w_max"]
 
-n_feats_p = config['promoter_feats_basic_nums'] - len(config["remove_marks"])  + feature_bin_kws['out_channels'] if add_feature_bin else config['promoter_feats_basic_nums'] - len(config["remove_marks"])
+n_feats_p = config['promoter_feats_basic_nums'] - len(config["remove_marks"])
 n_feats_pcres = config['pcres_feats_basic_nums'] 
 d_emb = config["embed"]["d_model"]
 embed_kws = config["embed"]
@@ -80,7 +80,7 @@ datasets = {}
 for fold in [0,1,2,3]:
 
     binsizes = [500]
-    checkpoints = f"benchmark/Promoterformer/checkpoints/{eid}.{fold}.No_feature_bin.bs_bf_para.model.pt"
+    checkpoints = f"checkpoints/{eid}.{fold}.No_feature_bin.bs_bf_para.model.pt"
 
 
     meta_path = f"extra/datasets/processed/v1/meta_datasets/meta_data_{eid}.csv"
@@ -128,7 +128,7 @@ for fold in [0,1,2,3]:
 
     print(len(train_genes), len(val_genes))
 
-    val_dataset = BurstPrismaDataset(
+    val_dataset = BurstformerDataset(
         meta_path,
         npy_dir,
         val_genes,
@@ -139,9 +139,9 @@ for fold in [0,1,2,3]:
         config = config,
         with_gene_id=True
     )
-    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=bsz, num_workers=8)
+    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=bsz, num_workers=config['num_works'])
 
-    model = BurstPrisma(
+    model = ChromoformerClassifier(
         n_feats_p,
         d_emb,
         d_head,        embed_kws=embed_kws,
@@ -174,7 +174,7 @@ def build_cres_trees(cres_infos):
 
 
 # ---------------------- 提取 Attention 权重 ----------------------
-def get_attention_weights(gene_id, dataset: BurstPrismaDataset, model: BurstPrisma, binsize=500, dims=None):
+def get_attention_weights(gene_id, dataset: BurstformerDataset, model: ChromoformerClassifier, binsize=500, dims=None):
     sample = dataset.get_sample(gene_id, add_bsz_dim=True)
     x = sample["promoter_feats"][binsize]
     mask = sample["promoter_pad_masks"][binsize]
@@ -318,7 +318,7 @@ def summarize_overlap(df):
 # ---------------------- 示例运行 ----------------------
 if __name__ == "__main__":
     eid = "E116"
-    data = pd.read_csv(f"extra/datasets/benchmark/Promoterformer/results/predictions_bs_bf.csv")
+    data = pd.read_csv(f"extra/datasets/results/predictions_bs_bf.csv")
     data = data[data['eid'] == eid]
 
     cres_infos = get_cres_infos('extra/datasets/genomic/GRCh19-cCREs.bed')
@@ -326,6 +326,6 @@ if __name__ == "__main__":
 
     df_overlap = compute_attention_overlap(data, datasets, models, cres_infos, gene_infos,
                                            threshold=0.1,
-                                           out_path=f"extra/datasets/benchmark/Promoterformer/attention_overlap_{eid}.csv")
+                                           out_path=f"extra/datasets/attention_overlap_{eid}.csv")
 
     summarize_overlap(df_overlap)

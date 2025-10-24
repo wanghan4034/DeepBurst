@@ -10,12 +10,11 @@ from scipy import stats
 from sklearn import metrics
 from typing import List
 from src.model.data import BurstformerDataset
-from src.model.net import  ChromoformerClassifier
+from src.model.net import ChromoformerClassifier
 from src.utils.tools import seed_everything
 from src.utils.constants import DEVICE
 from src.utils.logs import get_logger
-from src.model.constants import get_config
-
+from src.model.constants import get_config, MARKS
 torch.autograd.set_detect_anomaly(True)
 
 logger = get_logger()
@@ -36,6 +35,8 @@ parser.add_argument("--w_prom", type=int, default=40000)
 parser.add_argument("--w_max", type=int, default=40000)
 parser.add_argument("--binsizes", nargs="+",type=int, default=[500])
 parser.add_argument("--remove_marks", nargs="+",type=str, default=[])
+parser.add_argument("--keep_marks", nargs="+",type=str, default=[])
+parser.add_argument("--add_feature_bin", action="store_true", default=False)
 parser.add_argument("--targets", nargs="+",type=str, default=['bs_label','bf_label'])
 parser.add_argument("--restore", action="store_true", default=False)
 
@@ -49,6 +50,16 @@ config = get_config(args.config)
 
 config["exp_id"] = args.exp_id  # Override
 config["remove_marks"] = args.remove_marks
+config["keep_marks"] = args.keep_marks
+
+if len(config["keep_marks"]) > 0:
+    if not len(config["remove_marks"]) > 0:
+        remove_marks = [mark for mark in MARKS if mark not in config["keep_marks"] ]
+        config["remove_marks"] = remove_marks
+
+
+
+
 seed = config["seed"]
 num_epoch = config["num_epoch"]
 lr = config["lr"]
@@ -60,9 +71,12 @@ i_max = config["i_max"]
 w_prom = args.w_prom
 w_max = args.w_max
 
-n_feats_p = config['marks_nums'] - len(config["remove_marks"])
+n_feats_p = config['promoter_feats_basic_nums'] - len(config["remove_marks"])
+n_feats_pcres = config['pcres_feats_basic_nums'] 
 d_emb = config["embed"]["d_model"]
 embed_kws = config["embed"]
+pairwise_interaction_kws = config["pairwise_interaction"]
+regulation_kws = config["regulation"]
 
 d_head = config["d_head"]
 targets = args.targets
@@ -190,6 +204,9 @@ for epoch in range(1, num_epoch):
     train_out = {target:[] for target in targets}
     train_label = {target:[] for target in targets}    
 
+    # burst_size_out, burst_size_labels = [],[]
+    # burst_frequency_out, burst_frequency_labels = [],[]
+
     # Train.
     model.train()
     for batch, d in bar:
@@ -204,6 +221,7 @@ for epoch in range(1, num_epoch):
 
         out = model(
             d["promoter_feats"][500],
+            d["promoter_pad_masks"][500],
         )
         preds = {}
         for target, pred in zip(targets,torch.chunk(out, len(targets), axis=-1)):
@@ -260,6 +278,7 @@ for epoch in range(1, num_epoch):
 
             out = model(
                 d["promoter_feats"][500],
+                d["promoter_pad_masks"][500],
             )
             val_out.append(out.cpu())
 

@@ -36,3 +36,8 @@ def get_config(config_path):
     config['promoter_feats_basic_nums'] = config['marks_nums'] + config['base_nums'] if config['promoter_with_sequence'] else config['marks_nums']
     config['pcres_feats_basic_nums'] = config['marks_nums'] + config['base_nums'] if config['pcres_with_sequence'] else config['marks_nums']
     return config
+
+MARKS = ["H3K4me1","H3K4me3","H3K9me3","H3K27me3","H3K36me3","H3K27ac","H3K9ac"]
+
+PERTURBATION_REGION = 'perturbation_region'
+PERTURBATION_STRENGTH = 'perturbation_strength'

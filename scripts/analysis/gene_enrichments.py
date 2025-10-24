@@ -5,7 +5,7 @@ import pandas as pd
 
 eid = "E116"
 remove_marks = "H3K36me3"
-gene_ids = pd.read_csv(f"extra/datasets/benchmark/Promoterformer/results/{eid}_{remove_marks}_associated_genes.csv")
+gene_ids = pd.read_csv(f"extra/datasets/results/{eid}_{remove_marks}_associated_genes.csv")
 gene_id2names = pd.read_csv("extra/datasets/burst/raw_data/H1/features.tsv",sep="\t",names=['gene_id','gene_name','type'])
 gene_names = pd.merge(gene_ids['gene_id'],gene_id2names[['gene_id','gene_name']],on='gene_id')
 

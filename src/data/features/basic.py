@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from typing import List, Dict, Union, Any
 from tqdm import tqdm 
-from src.data.utils import gemonic_slice_split, generate_frags_linking_key, genomic_slice_concat
+from src.data.features.utils import gemonic_slice_split, generate_frags_linking_key, genomic_slice_concat
 
 
 

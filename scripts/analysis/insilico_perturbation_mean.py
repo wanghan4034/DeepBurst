@@ -6,8 +6,8 @@ import pandas as pd
 from tqdm import tqdm
 from sklearn import metrics
 import seaborn as sns
-from src.model.data import BurstPrismaDataset
-from src.model.net import  BurstPrisma
+from src.model.data import BurstformerDataset
+from src.model.net import  ChromoformerClassifier
 from src.utils.tools import seed_everything
 from src.utils.constants import DEVICE
 from src.model.constants import get_config
@@ -28,7 +28,7 @@ def evaluation(out:'torch.Tensor', label:'torch.Tensor'):
     ap = metrics.average_precision_score(label, score) * 100
     return score, label, pred, acc, auc, ap
 
-config_path = "benchmark/Promoterformer/configs/default.yaml"
+config_path = "configs/default.yaml"
 config = get_config(config_path)
 add_feature_bin = False
 for eid in ["E116","E118","E003"]:
@@ -51,7 +51,7 @@ for eid in ["E116","E118","E003"]:
             config["remove_marks"] = []
 
 
-        feature_bin_kws = config['feature_bin_kws']
+        
         seed = config["seed"]
 
         bsz = config["bsz"]
@@ -61,7 +61,7 @@ for eid in ["E116","E118","E003"]:
         w_prom = config["w_prom"]
         w_max = config["w_max"]
 
-        n_feats_p = config['promoter_feats_basic_nums'] - len(config["remove_marks"])  + feature_bin_kws['out_channels'] if add_feature_bin else config['promoter_feats_basic_nums'] - len(config["remove_marks"])
+        n_feats_p = config['promoter_feats_basic_nums'] - len(config["remove_marks"])
         n_feats_pcres = config['pcres_feats_basic_nums'] 
         d_emb = config["embed"]["d_model"]
         embed_kws = config["embed"]
@@ -80,9 +80,9 @@ for eid in ["E116","E118","E003"]:
             for fold in [0,1,2,3]:
                 print(f"eid:{eid},fold:{fold}")
                 if remove_marks:
-                    checkpoints = f"benchmark/Promoterformer/checkpoints/{eid}.remove_{model_tag}.{fold}.No_feature_bin.mean_para.model.pt"
+                    checkpoints = f"checkpoints/{eid}.remove_{model_tag}.{fold}.No_feature_bin.mean_para.model.pt"
                 else :
-                    checkpoints = f"benchmark/Promoterformer/checkpoints/{eid}.{fold}.No_feature_bin.mean_para.model.pt"
+                    checkpoints = f"checkpoints/{eid}.{fold}.No_feature_bin.mean_para.model.pt"
 
                 meta_path = f"extra/datasets/processed/v1/meta_datasets/meta_data_{eid}.csv"
 
@@ -127,7 +127,7 @@ for eid in ["E116","E118","E003"]:
 
                 print(len(train_genes), len(val_genes))
 
-                val_dataset = BurstPrismaDataset(
+                val_dataset = BurstformerDataset(
                     meta_path,
                     npy_dir,
                     val_genes,
@@ -141,17 +141,17 @@ for eid in ["E116","E118","E003"]:
                 )
                 val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=bsz)
 
-                model = BurstPrisma(
+                model = ChromoformerClassifier(
                     n_feats_p,
-                    n_feats_pcres,
+                    
                     d_emb,
                     d_head,
-                    feature_bin_kws=feature_bin_kws,
+                    
                     embed_kws=embed_kws,
                     binsizes=binsizes,
                     seed=42,
                     targets=targets,
-                    add_feature_bin = add_feature_bin,
+                    
                 ).to(DEVICE)
 
                 ckpt = torch.load(checkpoints,map_location=DEVICE)
@@ -218,7 +218,7 @@ for eid in ["E116","E118","E003"]:
     print(f'EID:{eid}, keep_mark:{keep_mark} Done')
     predictions = pd.concat(predictions,axis=0)
 
-    predictions.to_csv(f"extra/datasets/benchmark/Promoterformer/results/{eid}_perturbation_predictions_mean.csv",index=False)
+    predictions.to_csv(f"extra/datasets/results/{eid}_perturbation_predictions_mean.csv",index=False)
     
 
 

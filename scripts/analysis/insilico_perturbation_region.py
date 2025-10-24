@@ -8,8 +8,8 @@ import pandas as pd
 from tqdm import tqdm
 from sklearn import metrics
 
-from src.model.data import BurstPrismaDataset
-from src.model.net import BurstPrisma
+from src.model.data import BurstformerDataset
+from src.model.net import ChromoformerClassifier
 from src.utils.tools import seed_everything
 from src.utils.constants import DEVICE
 from src.model.constants import (
@@ -24,10 +24,10 @@ FOLDS             = [0, 1, 2, 3]
 # 数据与模型路径
 META_DIR          = "extra/datasets/processed/v1/meta_datasets"
 REGION_DIR        = "extra/datasets/processed/v1"                    # npy 根目录
-CHECKPOINT_DIR    = "benchmark/Promoterformer/checkpoints"
+CHECKPOINT_DIR    = "checkpoints"
 
 # 配置文件
-CONFIG_PATH       = "benchmark/Promoterformer/configs/default.yaml"
+CONFIG_PATH       = "configs/default.yaml"
 
 # 训练/推理常用
 BATCH_SIZE        = None   # 若为 None，使用 config 里的 bsz
@@ -40,7 +40,7 @@ STRIDE_BINS       = 1      # 步长；=1 表示每 500bp 移动一次
 MASK_STRENGTH     = 0.0    # 0=完全抹除；0.5=减半；>1=增强
 
 # 输出
-OUT_CSV           = f"extra/datasets/benchmark/Promoterformer/results/slide_perturbation_{BINSIZE_BP}bp_k{SLIDE_K_BINS}_s{STRIDE_BINS}_ALL_MARKS.csv"
+OUT_CSV           = f"extra/datasets/results/slide_perturbation_{BINSIZE_BP}bp_k{SLIDE_K_BINS}_s{STRIDE_BINS}_ALL_MARKS.csv"
 
 # 是否保存预测的 argmax（可选）
 SAVE_PRED         = True
@@ -76,7 +76,7 @@ def main():
 
     # 一些模型尺寸参数
     add_feature_bin = False
-    feature_bin_kws = config['feature_bin_kws']
+    
     n_feats_p = (
         config['promoter_feats_basic_nums'] - len(config["remove_marks"]) + feature_bin_kws['out_channels']
         if add_feature_bin else
@@ -120,7 +120,7 @@ def main():
             print(f"Val gene count: {len(val_genes)} | n_feats_p={n_feats_p}")
 
             # 模型
-            model = BurstPrisma(
+            model = ChromoformerClassifier(
                 n_feats_p, d_emb, d_head,
                 embed_kws=config["embed"], binsizes=binsizes, seed=42, targets=targets
             ).to(DEVICE)
@@ -131,7 +131,7 @@ def main():
             # baseline：不遮挡
             run_cfg = copy.deepcopy(config)
             run_cfg["masked_marks"] = {}
-            val_dataset = BurstPrismaDataset(
+            val_dataset = BurstformerDataset(
                 meta_path, REGION_DIR, val_genes,
                 i_max, binsizes, w_prom, w_max,
                 targets=targets, config=run_cfg, with_gene_id=True
@@ -211,7 +211,7 @@ def main():
                 }
 
                 # DataLoader
-                val_dataset = BurstPrismaDataset(
+                val_dataset = BurstformerDataset(
                     meta_path, REGION_DIR, val_genes,
                     i_max, [binsize], w_prom, w_max,
                     targets=targets, config=run_cfg, with_gene_id=True
