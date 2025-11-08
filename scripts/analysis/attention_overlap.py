@@ -8,27 +8,8 @@ from src.data.features.genomics import get_cres_infos, get_gene_infos
 from src.model.data import BurstformerDataset
 from src.model.net import ChromoformerClassifier
 from src.utils.constants import DEVICE
-
-
-
-import argparse
-import torch
-import torch.nn as nn
-import os
-import pandas as pd
-import yaml
-import numpy as np
-from tqdm import tqdm
-from typing import List
-import seaborn as sns
-import matplotlib.pyplot as plt
-from matplotlib import rcParams, rcParamsDefault
-from src.model.data import BurstformerDataset
-from src.model.net import  ChromoformerClassifier
 from src.utils.tools import seed_everything
-from src.utils.constants import DEVICE
 from src.model.constants import get_config
-from src.utils.visualization import plot_heatmap
 
 
 torch.autograd.set_detect_anomaly(True)
@@ -47,7 +28,7 @@ config['masked_marks'] = []
 # add_feature_bin = True
 add_feature_bin = False
 
-eid = 'E116'
+eid = 'E003'
 remove_marks = None
 
 if remove_marks:
@@ -73,7 +54,8 @@ pairwise_interaction_kws = config["pairwise_interaction"]
 regulation_kws = config["regulation"]
 d_head = config["d_head"]
 targets = ['bs_label','bf_label']
-npy_dir = "extra/datasets/processed/v1"
+# npy_dir = "extra/datasets/processed/v1"
+npy_dir = f"/Volumes/ExtremeSSD/BioStudy/CodeReview/burstformer/extra/datasets/processed/v1"
 
 models = {}
 datasets = {}
@@ -317,7 +299,7 @@ def summarize_overlap(df):
 
 # ---------------------- 示例运行 ----------------------
 if __name__ == "__main__":
-    eid = "E116"
+    # eid = "E003"
     data = pd.read_csv(f"extra/datasets/results/predictions_bs_bf.csv")
     data = data[data['eid'] == eid]
 
@@ -326,6 +308,6 @@ if __name__ == "__main__":
 
     df_overlap = compute_attention_overlap(data, datasets, models, cres_infos, gene_infos,
                                            threshold=0.1,
-                                           out_path=f"extra/datasets/attention_overlap_{eid}.csv")
+                                           out_path=f"extra/datasets/results/attention_overlap_{eid}.csv")
 
     summarize_overlap(df_overlap)

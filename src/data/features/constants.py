@@ -22,7 +22,8 @@ GENOMIC_SLICE = 'genomic_slice'
 START_PADDING_SIZE = 'start_padding_size'
 END_PADDING_SIZE = 'end_padding_size'
 
-CONFIG_PATH = 'src/model/configs/default.yaml'
+# CONFIG_PATH = 'src/model/configs/default.yaml'
+CONFIG_PATH = 'configs/default.yaml'
 with open(CONFIG_PATH) as f:
     CONFIG = yaml.safe_load(f)
 

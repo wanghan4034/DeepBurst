@@ -23,6 +23,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--gene', required=True, help='Gene bed file with transcript start site.')
 parser.add_argument('--eid', required=True, help='Cell Type EID.')
 parser.add_argument('--hic', required=False, help='Hic Fragment data, which should be txt format.')
+parser.add_argument('--sequence', required=False, help='add DNA sequence, which should be txt format.')
 parser.add_argument('--epi_dir', required=True, help='Epigenetic data dir.')
 parser.add_argument('--max_neighbors', type=int, default=8, help='Input tissue.')
 parser.add_argument('-o','--output', required=True, help='Input tissue.')
@@ -138,9 +139,12 @@ with open(meta_data_path,'w+') as w:
                 marks_data += signals[mark].get_values_by_location(item)
             
             marks_data = np.array(marks_data)
-            sequences = get_dna_sequences([item],GENOMIC_FASTA_PATH)
-            sequence_data = parse_dna_sequence(sequences[0])
-            data = np.concatenate((marks_data,sequence_data), axis=0)
+            if args.sequence:
+                sequences = get_dna_sequences([item],GENOMIC_FASTA_PATH)
+                sequence_data = parse_dna_sequence(sequences[0])
+                data = np.concatenate((marks_data,sequence_data), axis=0)
+            else:
+                data = marks_data
             out = os.path.join(npy_saved_dir, f'{region_id}.npy')
             np.save(out, data)
 
