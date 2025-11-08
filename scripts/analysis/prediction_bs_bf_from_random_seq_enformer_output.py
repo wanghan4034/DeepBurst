@@ -3,7 +3,7 @@ import pandas as pd
 from tqdm import tqdm
 from sklearn import metrics
 from src.model.data import EnformerDataset
-from src.model.net import  ChromoformerClassifier
+from src.model.net import  BurstFormer
 from src.utils.tools import seed_everything
 from src.utils.constants import DEVICE
 from src.model.constants import get_config
@@ -121,7 +121,7 @@ for eid in ["E003"]:
         val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=bsz)
 
 
-        model = ChromoformerClassifier(
+        model = BurstFormer(
             n_feats_p,
             d_emb,
             d_head,

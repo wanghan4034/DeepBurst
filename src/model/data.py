@@ -115,7 +115,7 @@ def _bin_log_pad_with_mask(
 
 # ------------------------- Datasets ------------------------- #
 
-class BurstformerDataset(Dataset):
+class BurstFormerDataset(Dataset):
     """
     Build multi-scale promoter (and optional pCRE) features.
     For each binsize:

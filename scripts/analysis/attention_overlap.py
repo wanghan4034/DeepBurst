@@ -5,8 +5,8 @@ from tqdm import tqdm
 from intervaltree import IntervalTree
 from typing import List
 from src.data.features.genomics import get_cres_infos, get_gene_infos
-from src.model.data import BurstformerDataset
-from src.model.net import ChromoformerClassifier
+from src.model.data import BurstFormerDataset
+from src.model.net import BurstFormer
 from src.utils.constants import DEVICE
 from src.utils.tools import seed_everything
 from src.model.constants import get_config
@@ -28,7 +28,7 @@ config['masked_marks'] = []
 # add_feature_bin = True
 add_feature_bin = False
 
-eid = 'E003'
+eid = 'E116'
 remove_marks = None
 
 if remove_marks:
@@ -110,7 +110,7 @@ for fold in [0,1,2,3]:
 
     print(len(train_genes), len(val_genes))
 
-    val_dataset = BurstformerDataset(
+    val_dataset = BurstFormerDataset(
         meta_path,
         npy_dir,
         val_genes,
@@ -123,7 +123,7 @@ for fold in [0,1,2,3]:
     )
     val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=bsz, num_workers=config['num_works'])
 
-    model = ChromoformerClassifier(
+    model = BurstFormer(
         n_feats_p,
         d_emb,
         d_head,        embed_kws=embed_kws,
@@ -156,7 +156,7 @@ def build_cres_trees(cres_infos):
 
 
 # ---------------------- 提取 Attention 权重 ----------------------
-def get_attention_weights(gene_id, dataset: BurstformerDataset, model: ChromoformerClassifier, binsize=500, dims=None):
+def get_attention_weights(gene_id, dataset: BurstFormerDataset, model: BurstFormer, binsize=500, dims=None):
     sample = dataset.get_sample(gene_id, add_bsz_dim=True)
     x = sample["promoter_feats"][binsize]
     mask = sample["promoter_pad_masks"][binsize]

@@ -9,8 +9,8 @@ from tqdm import tqdm
 from scipy import stats
 from sklearn import metrics
 from typing import List
-from src.model.data import BurstformerDataset
-from src.model.net import ChromoformerClassifier
+from src.model.data import BurstFormerDataset
+from src.model.net import BurstFormer
 from src.utils.tools import seed_everything
 from src.utils.constants import DEVICE
 from src.utils.logs import get_logger
@@ -137,7 +137,7 @@ val_genes = qs[(args.fold + 3) % 4]
 
 logger.info(f"train:{len(train_genes)}, val:{len(val_genes)}")
 
-train_dataset = BurstformerDataset(
+train_dataset = BurstFormerDataset(
     args.meta,
     args.npy_dir,
     train_genes,
@@ -148,7 +148,7 @@ train_dataset = BurstformerDataset(
     targets=targets,
     config = config,
 )
-val_dataset = BurstformerDataset(
+val_dataset = BurstFormerDataset(
     args.meta,
     args.npy_dir,
     val_genes,
@@ -165,7 +165,7 @@ train_loader = torch.utils.data.DataLoader(
 )
 val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=bsz, num_workers=config['num_works'])
 
-model = ChromoformerClassifier(
+model = BurstFormer(
     n_feats_p,
     d_emb,
     d_head,

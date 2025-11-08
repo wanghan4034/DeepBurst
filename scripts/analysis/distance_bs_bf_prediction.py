@@ -6,8 +6,8 @@ import pandas as pd
 from tqdm import tqdm
 from sklearn import metrics
 import seaborn as sns
-from src.model.data import BurstformerDataset
-from src.model.net import  ChromoformerClassifier
+from src.model.data import BurstFormerDataset
+from src.model.net import  BurstFormer
 from src.utils.tools import seed_everything
 from src.utils.constants import DEVICE
 from src.model.constants import get_config
@@ -113,7 +113,7 @@ for eid in ["E116","E118","E003"]:
 
             print(len(train_genes), len(val_genes))
 
-            val_dataset = BurstformerDataset(
+            val_dataset = BurstFormerDataset(
                 meta_path,
                 npy_dir,
                 val_genes,
@@ -127,7 +127,7 @@ for eid in ["E116","E118","E003"]:
             )
             val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=bsz)
 
-            model = ChromoformerClassifier(
+            model = BurstFormer(
                 n_feats_p,
                 
                 d_emb,
