@@ -129,6 +129,107 @@ The metadata file is a .csv containing gene-level annotations, expression values
 | bf_label        | Binary label for burst frequency              |
 | mean_label      | Binary label for mean expression              |
 
+### **Prediction Demo**
+
+Below is a complete demo showing how to perform random-input prediction using the BurstFormer model.
+
+This demo generates random histone marks' signals , passes them through the model, computes dual-softmax probabilities and evaluates the results.
+
+```
+# ==========================================
+# BurstFormer Random Prediction Demo (with Mask)
+# ==========================================
+
+import torch
+
+from sklearn import metrics
+from src.utils.constants import DEVICE
+from src.model.constants import get_config
+config_path = "configs/default.yaml"
+config = get_config(config_path)
+# -----------------------------
+# 1. Random Input Data
+# -----------------------------
+batch_size = 64
+seq_len = 80
+n_feats = 7
+
+# Simulated promoter feature tensor and attention mask
+inputs = torch.randn(batch_size, 1, seq_len, n_feats).to(DEVICE)
+labels = torch.randint(0, 2, (batch_size, 2)).to(DEVICE)
+print(labels.shape)
+print(labels[:5])
+
+print("inputs:", inputs.shape)
+
+# -----------------------------
+# 2. Load BurstFormer
+# -----------------------------
+from src.model.net import  BurstFormer
+
+n_feats_p = n_feats
+d_head = 128
+d_emb = config["embed"]["d_model"]
+embed_kws = config["embed"]
+d_head = config["d_head"]
+binsizes = [500]
+targets = ['bs_label','bf_label']
+
+model = BurstFormer(
+    n_feats_p,
+    d_emb,
+    d_head,
+    embed_kws=embed_kws,
+    binsizes=binsizes,
+    seed=42,
+    targets=targets,
+).to(DEVICE)
+
+# load trained checkpoint, choose model according to cell line and the fold of  the chrom number. here is a demo
+# H1 cell line, fold 0
+eid = 'E003'
+fold = '0'
+ckpt = torch.load(f"checkpoints/{eid}.{fold}.No_feature_bin.bs_bf_para.model.pt", map_location=DEVICE)
+model.load_state_dict(ckpt["net"])
+
+model.eval()
+
+
+def evaluation(out:'torch.Tensor', label:'torch.Tensor'):
+    score = out.softmax(axis=1)[:, 1]
+    pred = out.argmax(axis=1)
+
+    acc = metrics.accuracy_score(label, pred) * 100
+    auc = metrics.roc_auc_score(label, score) * 100
+    return score, label, pred, acc, auc
+
+
+with torch.no_grad():
+    val_out = model(inputs)
+
+
+print("\n=== Output Shapes ===")
+print("logits:", val_out.shape)
+
+val_preds = {}
+for target, pred in zip(targets,torch.chunk(val_out, len(targets), axis=-1)):
+    val_preds[target] = pred
+
+val_labels = {}
+for target, label in zip(targets,torch.chunk(labels, len(targets), axis=-1)):
+    val_labels[target] = label   
+# -----------------------------
+# 4. Evaluation
+# -----------------------------
+    description = "Validation Results: "
+for target in targets:
+    val_score, val_label, val_pred, val_acc, val_auc = evaluation(val_preds[target],val_labels[target])
+    description += f"{target}: acc={val_acc:.4f}, auc={val_auc:.4f}; " 
+print(description)
+```
+
+
+
 ## **System Requirements**
 
 BurstFormer was trained on a server equipped with 28 Intel(R) Xeon(R) Gold 6132 CPUs @ 2.60GHz, 60 GB RAM, and 1 NVIDIA A100 GPU with 16 GB memory. 
