@@ -1,0 +1,25 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Burstformer Reg Task",
+        "type": "python",
+        "request": "launch",
+        "program": "${workspaceFolder}/benchmarks/burstformer_reg_task/train.py",
+        "console": "integratedTerminal",
+        "cwd": "${workspaceFolder}",
+        "args": [
+          "--config", "configs/default.yaml",
+          "--meta", "extra/datasets/processed/v1/meta_datasets/meta_data_E003.csv",
+          "--npy-dir", "/Volumes/ExtremeSSD/BioStudy/CodeReview/burstformer/extra/datasets/processed/v1",
+          "--fold", "0",
+          "-o", "benchmarks/burstformer_reg_task/checkpoints/E003.0.bs_bf_para.reg.model.pt",
+          "--exp-id", "2",
+          "--binsizes", "500",
+          "--targets","bs", "bf",
+        ],
+
+        "justMyCode": false
+      }
+    ]
+  }

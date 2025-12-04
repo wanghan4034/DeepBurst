@@ -3,7 +3,7 @@ checkpoints*
 .__
 __pycache__
 extra
-benchmarks
+# benchmarks
 data
 logs
 .snakemake

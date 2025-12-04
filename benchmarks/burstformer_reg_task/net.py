@@ -60,7 +60,7 @@ class EmbeddingTransformer(nn.Module):
 
 
 
-class BurstFormer(nn.Module):
+class BurstFormerRegressor(nn.Module):
     def __init__(
         self,
         n_feats_p=7,
@@ -76,7 +76,7 @@ class BurstFormer(nn.Module):
         seed=42,
         targets = None,
     ):
-        super(BurstFormer, self).__init__()
+        super(BurstFormerRegressor, self).__init__()
         torch.manual_seed(seed)
 
         # Update arguments for each transformer layer.
@@ -91,7 +91,7 @@ class BurstFormer(nn.Module):
         self.fc_head = nn.Sequential(
             nn.Linear(d_emb * len(binsizes), d_head),
             nn.ReLU(),
-            nn.Linear(d_head, len(targets) * 2),
+            nn.Linear(d_head, len(targets)),
         )
 
     def forward(
@@ -116,7 +116,6 @@ class BurstFormer(nn.Module):
         }
 
         x = torch.cat([x_in[binsize][:, 0] for binsize in self.binsizes], axis=1)
-        # burst_size, burst_frequency = torch.chunk(self.fc_head(x),len(targets),dim=-1)
 
         return  self.fc_head(x)
 
@@ -156,7 +155,7 @@ class BurstFormer(nn.Module):
 if __name__ == "__main__":
 
     targets = ['bf', 'bs']
-    model = BurstFormer(targets=targets).to(DEVICE)    
+    model = BurstFormerRegressor(targets=targets).to(DEVICE)    
 
     # Dummy data.
     bsz = 8
@@ -253,12 +252,3 @@ if __name__ == "__main__":
 
     print(out.sum())
     print(out.shape)
-    # -0.1900, [8, 1]
-
-    # ckpt = torch.load("test.pt")
-    # model_classifier.load_state_dict(ckpt["net"])
-
-    # ckpt = torch.load(
-    #     "checkpoints/burst.bf.E116.reg.model.pt"
-    # )
-    # model_regressor.load_state_dict(ckpt["net"])
