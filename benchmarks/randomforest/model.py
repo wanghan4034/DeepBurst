@@ -73,7 +73,7 @@ def train_and_eval_classifier(
 
     # ---------- 2) Random Forest Classifier ----------
     rf_clf = RandomForestClassifier(
-        n_estimators=100,
+        n_estimators=300,
         max_depth=None,
         n_jobs=-1,
         random_state=random_state,
