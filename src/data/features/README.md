@@ -9,5 +9,5 @@ python src/data/data_process.py --eid E118 --gene extra/datasets/genomic/hg19/ge
 
 ### Generate Labels
 ```
-
+bash src/data/burst/run.sh
 ```

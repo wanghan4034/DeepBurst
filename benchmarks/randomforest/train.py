@@ -9,8 +9,10 @@ from benchmarks.randomforest.model import train_and_eval_classifier
 
 def main():
     # 路径按你的项目调整
-    eid = 'E003'
-    meta_path = f"extra/datasets/processed/v1/meta_datasets/meta_data_{eid}.csv"
+    eid = 'E118'
+    tag = 'deeptx_delay_1'
+    # meta_path = f"extra/datasets/processed/v1/meta_datasets/meta_data_{eid}.csv"
+    meta_path = f"extra/datasets/processed/v1/meta_datasets/meta_data_{eid}_{tag}.csv"    
     npy_dir = "/Volumes/ExtremeSSD/BioStudy/CodeReview/burstformer/extra/datasets/processed/v1"
     binsizes = [500]
     print(f"Processing EID: {eid}")
@@ -109,7 +111,7 @@ def main():
         columns=["eid", "fold", "target", "method", "auc", "acc"]
     )
 
-    out_path = f"benchmarks/randomforest/results/{eid}_bs_bf_para_indicators.csv"
+    out_path = f"benchmarks/randomforest/results/{eid}_bs_bf_para_{tag}_indicators.csv"
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     results_df.to_csv(out_path, index=False)
     print(f"\nSaved indicators to: {out_path}")
