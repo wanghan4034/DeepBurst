@@ -1,3 +1,16 @@
+
+# **Model overview**
+
+DeepBurst is a transformer-based framework that predicts genome-wide transcriptional bursting kinetics from promoter-proximal histone modification profiles. It aims to quantify how chromatin states shape bursting behavior by jointly modeling burst frequency and burst size.
+
+For each gene, we represent the local regulatory context using a 40 kb window centered at the transcription start site. ChIP–seq coverage tracks for seven canonical histone modifications spanning activating and repressive chromatin states (H3K9ac, H3K27ac, H3K4me3, H3K4me1, H3K36me3, H3K27me3, H3K9me3) are aggregated into 80 bins of 500 bp. A Transformer encoder then learns dependencies across genomic positions and across histone marks, producing a position-resolved regulatory embedding.
+
+To generate supervisory labels, gene-specific bursting parameters are inferred from matched single-cell RNA-seq data using stochastic transcription models and aligned with the corresponding histone profiles in the same cell line. Because capture efficiency, cell type, and inference pipelines can introduce systematic shifts in continuous kinetic estimates, we formulate prediction as a binary classification task rather than regression. Within each cell line, genes are labeled as high or low burst frequency and high or low burst size using median-based thresholds, yielding robust labels for training.
+
+The transcription-start-site–centered embedding extracted from the Transformer output is passed through fully connected layers and two parallel binary classifiers to predict burst frequency and burst size labels. Model training and evaluation are performed separately per cell type using fourfold chromosome-split cross-validation to prevent information leakage between training and validation sets.
+
+Once trained, the model supports downstream analyses including genome-wide bursting-state prediction from histone profiles, identification of informative histone marks and genomic positions, and in silico perturbation analyses that prioritize histone-signal changes predicted to shift genes between bursting states.
+
 # **Model Training**
 
 This repository provides the training pipeline for predicting transcriptional burst dynamics using histone modification features and burst labels.
