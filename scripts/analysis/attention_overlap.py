@@ -55,7 +55,7 @@ regulation_kws = config["regulation"]
 d_head = config["d_head"]
 targets = ['bs_label','bf_label']
 # npy_dir = "extra/datasets/processed/v1"
-npy_dir = f"/Volumes/ExtremeSSD/BioStudy/CodeReview/DeepBurst/extra/datasets/processed/v1"
+npy_dir = f"extra/datasets/processed/v1"
 
 models = {}
 datasets = {}

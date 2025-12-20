@@ -9,7 +9,7 @@ do
     for fold in 0 1 2 3
     do  
         echo "experiment $eid $fold"
-        python benchmarks/DeepBurst_reg_task/train.py --config configs/default.yaml --meta extra/datasets/processed/v1/meta_datasets/meta_data_$eid.csv  --npy-dir /Volumes/ExtremeSSD/BioStudy/CodeReview/DeepBurst/extra/datasets/processed/v1 --fold $fold  -o benchmarks/DeepBurst_reg_task/checkpoints/$eid.$fold.bs_bf_para.reg.model.pt --exp-id 2 --binsizes 500 > logs/$eid.$fold.bs_bf_para.reg.train.log 2>&1
+        python benchmarks/DeepBurst_reg_task/train.py --config configs/default.yaml --meta extra/datasets/processed/v1/meta_datasets/meta_data_$eid.csv  --npy-dir extra/datasets/processed/v1 --fold $fold  -o benchmarks/DeepBurst_reg_task/checkpoints/$eid.$fold.bs_bf_para.reg.model.pt --exp-id 2 --binsizes 500 > logs/$eid.$fold.bs_bf_para.reg.train.log 2>&1
         sleep 120
     done
 done 

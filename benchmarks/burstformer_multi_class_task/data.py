@@ -398,7 +398,7 @@ class EnformerDataset(Dataset):
     
 if __name__ == '__main__':
     targets = ['bf', 'bs']
-    npy_dir = '/Volumes/ExtremeSSD/BioStudy/CodeReview/DeepBurst/extra/datasets/processed/v1'
+    npy_dir = 'extra/datasets/processed/v1'
     dataset = DeepBurstRegDataset(
         meta='extra/datasets/processed/v1/meta_datasets/meta_data_E003.csv',
         npy_dir=npy_dir,
