@@ -115,7 +115,7 @@ def _bin_log_pad_with_mask(
 
 # ------------------------- Datasets ------------------------- #
 
-class BurstFormerRegDataset(Dataset):
+class DeepBurstRegDataset(Dataset):
     """
     Build multi-scale promoter (and optional pCRE) features.
     For each binsize:
@@ -140,7 +140,7 @@ class BurstFormerRegDataset(Dataset):
         config: Optional[Dict] = None,
         with_gene_id: bool = False,
     ):
-        super(BurstFormerRegDataset).__init__()
+        super(DeepBurstRegDataset).__init__()
         self.npy_dir = npy_dir
         self.gene_ids = list(gene_ids)
 
@@ -398,8 +398,8 @@ class EnformerDataset(Dataset):
     
 if __name__ == '__main__':
     targets = ['bf', 'bs']
-    npy_dir = '/Volumes/ExtremeSSD/BioStudy/CodeReview/burstformer/extra/datasets/processed/v1'
-    dataset = BurstFormerRegDataset(
+    npy_dir = '/Volumes/ExtremeSSD/BioStudy/CodeReview/DeepBurst/extra/datasets/processed/v1'
+    dataset = DeepBurstRegDataset(
         meta='extra/datasets/processed/v1/meta_datasets/meta_data_E003.csv',
         npy_dir=npy_dir,
         gene_ids=['ENSG00000122417', 'ENSG00000143319','ENSG00000143320'],

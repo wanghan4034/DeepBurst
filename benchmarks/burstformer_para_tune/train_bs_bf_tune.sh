@@ -9,7 +9,7 @@ do
     for fold in 0 1 2 3
     do  
         echo "experiment $eid $fold"
-        python benchmarks/burstformer_para_tune/train.py --config configs/default_para_tune_dim256.yaml --meta extra/datasets/processed/v1/meta_datasets/meta_data_$eid.csv  --npy-dir /GPUFS/sysu_jjzhang_3/wanghan/burstformer/extra/datasets/processed/v1 --fold $fold  -o benchmarks/burstformer_para_tune/checkpoints/$eid.$fold.bs_bf_para.tune.dim256.model.pt --exp-id 2 --binsizes 500 > logs/$eid.$fold.bs_bf_para.tune.dim256.train.log 2>&1
+        python benchmarks/DeepBurst_para_tune/train.py --config configs/default_para_tune_dim256.yaml --meta extra/datasets/processed/v1/meta_datasets/meta_data_$eid.csv  --npy-dir /GPUFS/sysu_jjzhang_3/wanghan/DeepBurst/extra/datasets/processed/v1 --fold $fold  -o benchmarks/DeepBurst_para_tune/checkpoints/$eid.$fold.bs_bf_para.tune.dim256.model.pt --exp-id 2 --binsizes 500 > logs/$eid.$fold.bs_bf_para.tune.dim256.train.log 2>&1
         sleep 120
     done
 done 
@@ -23,7 +23,7 @@ done
 #     for binsize in 10
 #     do  
 #         echo "experiment $eid $fold"
-#         python benchmarks/burstformer_para_tune/train.py --config configs/default_para_tune_dim256.yaml --meta extra/datasets/processed/v1/meta_datasets/meta_data_$eid.csv  --npy-dir /GPUFS/sysu_jjzhang_3/wanghan/burstformer/extra/datasets/processed/v1 --fold $fold  -o benchmarks/burstformer_para_tune/checkpoints/$eid.$fold.bs_bf_para.tune.dim256.model.pt --exp-id 2 --binsizes 500 > logs/$eid.$fold.bs_bf_para.tune.dim256.train.log 2>&1
+#         python benchmarks/DeepBurst_para_tune/train.py --config configs/default_para_tune_dim256.yaml --meta extra/datasets/processed/v1/meta_datasets/meta_data_$eid.csv  --npy-dir /GPUFS/sysu_jjzhang_3/wanghan/DeepBurst/extra/datasets/processed/v1 --fold $fold  -o benchmarks/DeepBurst_para_tune/checkpoints/$eid.$fold.bs_bf_para.tune.dim256.model.pt --exp-id 2 --binsizes 500 > logs/$eid.$fold.bs_bf_para.tune.dim256.train.log 2>&1
 #         sleep 120
 #     done
 # done 
@@ -40,7 +40,7 @@ done
 #             echo "experiment $eid $mark $fold"
 #             tag=`echo $mark | tr ' ' '_'`
 #             echo "experiment tag: $tag"
-#             python train.py --config configs/default.yaml --meta extra/datasets/processed/v1/meta_datasets/meta_data_$eid.csv  --npy-dir /GPUFS/sysu_jjzhang_3/wanghan/burstformer/extra/datasets/processed/v1 --fold $fold  -o checkpoints/$eid.remove_$tag.$fold.bs_bf_para.model.pt --exp-id 2 --binsizes 500 --remove_marks $mark > logs/$eid.remove_$tag.$fold.bs_bf_para.train.log 2>&1
+#             python train.py --config configs/default.yaml --meta extra/datasets/processed/v1/meta_datasets/meta_data_$eid.csv  --npy-dir /GPUFS/sysu_jjzhang_3/wanghan/DeepBurst/extra/datasets/processed/v1 --fold $fold  -o checkpoints/$eid.remove_$tag.$fold.bs_bf_para.model.pt --exp-id 2 --binsizes 500 --remove_marks $mark > logs/$eid.remove_$tag.$fold.bs_bf_para.train.log 2>&1
 #             sleep 120
 #         done
 #     done 
@@ -56,7 +56,7 @@ done
 #         for fold in 0 1 2 3
 #         do  
 #             echo "experiment $eid $mark $fold"
-#             python train.py --config configs/default.yaml --meta extra/datasets/processed/v1/meta_datasets/meta_data_$eid.csv  --npy-dir /GPUFS/sysu_jjzhang_3/wanghan/burstformer/extra/datasets/processed/v1 --fold $fold  -o checkpoints/$eid.remove_$mark.$fold.bs_bf_para.model.pt --exp-id 2 --binsizes 500 --remove_marks $mark > logs/$eid.remove_$mark.$fold.bs_bf_para.train.log 2>&1
+#             python train.py --config configs/default.yaml --meta extra/datasets/processed/v1/meta_datasets/meta_data_$eid.csv  --npy-dir /GPUFS/sysu_jjzhang_3/wanghan/DeepBurst/extra/datasets/processed/v1 --fold $fold  -o checkpoints/$eid.remove_$mark.$fold.bs_bf_para.model.pt --exp-id 2 --binsizes 500 --remove_marks $mark > logs/$eid.remove_$mark.$fold.bs_bf_para.train.log 2>&1
 #             sleep 120
 #         done
 #     done 
@@ -68,7 +68,7 @@ done
 # for fold in 0 1 2 3
 # do  
 #     echo "experiment agnostic model $fold"
-#     python train.py --config configs/default.yaml --meta extra/datasets/processed/v1/train.csv  --npy-dir /GPUFS/sysu_jjzhang_3/wanghan/burstformer/extra/datasets/processed/v1 --fold $fold  -o checkpoints/agnostic.$fold.bs_bf_para.model.pt --exp-id 2 --binsizes 500 > logs/agnostic.$fold.bs_bf_para.train.log 2>&1
+#     python train.py --config configs/default.yaml --meta extra/datasets/processed/v1/train.csv  --npy-dir /GPUFS/sysu_jjzhang_3/wanghan/DeepBurst/extra/datasets/processed/v1 --fold $fold  -o checkpoints/agnostic.$fold.bs_bf_para.model.pt --exp-id 2 --binsizes 500 > logs/agnostic.$fold.bs_bf_para.train.log 2>&1
 #     sleep 120
 # done
 
@@ -81,7 +81,7 @@ done
 #         for fold in 0 1 2 3
 #         do  
 #             echo "experiment $eid $fold $distance"
-#             python train.py --config configs/default.yaml --meta extra/datasets/processed/v1/meta_datasets/meta_data_$eid.csv  --npy-dir /GPUFS/sysu_jjzhang_3/wanghan/burstformer/extra/datasets/processed/v1 --fold $fold  -o checkpoints/$eid.$fold.$distance.bs_bf_para.model.pt --exp-id 2 --binsizes 500 --w_prom $distance --w_max $distance > logs/$eid.$fold.$distance.bs_bf_para.train.log 2>&1
+#             python train.py --config configs/default.yaml --meta extra/datasets/processed/v1/meta_datasets/meta_data_$eid.csv  --npy-dir /GPUFS/sysu_jjzhang_3/wanghan/DeepBurst/extra/datasets/processed/v1 --fold $fold  -o checkpoints/$eid.$fold.$distance.bs_bf_para.model.pt --exp-id 2 --binsizes 500 --w_prom $distance --w_max $distance > logs/$eid.$fold.$distance.bs_bf_para.train.log 2>&1
 #             sleep 120
 #         done
 #     done 
@@ -98,7 +98,7 @@ done
 #         for fold in 0 1 2 3
 #         do  
 #             echo "experiment $eid $fold"
-#             python train.py --config configs/default.yaml --meta extra/datasets/processed/v1/meta_datasets/meta_data_$eid.csv  --npy-dir /GPUFS/sysu_jjzhang_3/wanghan/burstformer/extra/datasets/processed/v1 --fold $fold  -o checkpoints/$eid.$fold.binsize_$binsize.cv.bs_bf_para.model.pt --exp-id 2 --targets cv_label --binsizes $binsize > logs/$eid.$fold.binsize_$binsize.cv.bs_bf_para.train.log 2>&1
+#             python train.py --config configs/default.yaml --meta extra/datasets/processed/v1/meta_datasets/meta_data_$eid.csv  --npy-dir /GPUFS/sysu_jjzhang_3/wanghan/DeepBurst/extra/datasets/processed/v1 --fold $fold  -o checkpoints/$eid.$fold.binsize_$binsize.cv.bs_bf_para.model.pt --exp-id 2 --targets cv_label --binsizes $binsize > logs/$eid.$fold.binsize_$binsize.cv.bs_bf_para.train.log 2>&1
 #             sleep 120
 #         done
 #     done 
@@ -116,7 +116,7 @@ done
 #             echo "experiment $eid $mark $fold"
 #             tag=`echo $mark | tr ' ' '_'`
 #             echo "experiment tag: $tag"
-#             python train.py --config configs/default.yaml --meta extra/datasets/processed/v1/meta_datasets/meta_data_$eid.csv  --npy-dir /GPUFS/sysu_jjzhang_3/wanghan/burstformer/extra/datasets/processed/v1 --fold $fold  -o checkpoints/$eid.$tag.$fold.bs_bf_para.model.pt --exp-id 2 --binsizes 500 --remove_marks $mark > logs/$eid.$tag.$fold.bs_bf_para.train.log 2>&1
+#             python train.py --config configs/default.yaml --meta extra/datasets/processed/v1/meta_datasets/meta_data_$eid.csv  --npy-dir /GPUFS/sysu_jjzhang_3/wanghan/DeepBurst/extra/datasets/processed/v1 --fold $fold  -o checkpoints/$eid.$tag.$fold.bs_bf_para.model.pt --exp-id 2 --binsizes 500 --remove_marks $mark > logs/$eid.$tag.$fold.bs_bf_para.train.log 2>&1
 #             sleep 120
 #         done
 #     done 

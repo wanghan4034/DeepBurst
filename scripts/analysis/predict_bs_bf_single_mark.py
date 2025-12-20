@@ -6,8 +6,8 @@ import pandas as pd
 from tqdm import tqdm
 from sklearn import metrics
 import seaborn as sns
-from src.model.data import BurstFormerDataset
-from src.model.net import  BurstFormer
+from src.model.data import DeepBurstDataset
+from src.model.net import  DeepBurst
 from src.utils.tools import seed_everything
 from src.utils.constants import DEVICE
 from src.model.constants import get_config
@@ -124,7 +124,7 @@ for eid in ["E116","E118","E003"]:
 
             print(len(train_genes), len(val_genes))
 
-            val_dataset = BurstFormerDataset(
+            val_dataset = DeepBurstDataset(
                 meta_path,
                 npy_dir,
                 val_genes,
@@ -138,7 +138,7 @@ for eid in ["E116","E118","E003"]:
             )
             val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=bsz)
 
-            model = BurstFormer(
+            model = DeepBurst(
                 n_feats_p,
                 
                 d_emb,

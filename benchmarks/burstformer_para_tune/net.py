@@ -60,7 +60,7 @@ class EmbeddingTransformer(nn.Module):
 
 
 
-class BurstFormer(nn.Module):
+class DeepBurst(nn.Module):
     def __init__(
         self,
         n_feats_p=7,
@@ -76,7 +76,7 @@ class BurstFormer(nn.Module):
         seed=42,
         targets = None,
     ):
-        super(BurstFormer, self).__init__()
+        super(DeepBurst, self).__init__()
         torch.manual_seed(seed)
 
         # Update arguments for each transformer layer.
@@ -156,7 +156,7 @@ class BurstFormer(nn.Module):
 if __name__ == "__main__":
 
     targets = ['bf', 'bs']
-    model = BurstFormer(targets=targets).to(DEVICE)    
+    model = DeepBurst(targets=targets).to(DEVICE)    
 
     # Dummy data.
     bsz = 8

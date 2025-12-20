@@ -7,8 +7,8 @@ import pandas as pd
 from tqdm import tqdm
 from sklearn import metrics
 
-from src.model.data import BurstFormerDataset
-from src.model.net import BurstFormer
+from src.model.data import DeepBurstDataset
+from src.model.net import DeepBurst
 from src.utils.tools import seed_everything
 from src.utils.constants import DEVICE
 from src.model.constants import get_config, MARKS, PERTURBATION_STRENGTH, PERTURBATION_REGION
@@ -149,7 +149,7 @@ for eid in ["E116", "E118", "E003"]:
         print(f"Train/Val gene counts: {len(train_genes)}/{len(val_genes)} | n_feats_p={n_feats_p}")
 
         # ——— 加载模型（一次） ——— #
-        model = BurstFormer(
+        model = DeepBurst(
             n_feats_p,
             d_emb,
             d_head,
@@ -170,7 +170,7 @@ for eid in ["E116", "E118", "E003"]:
             config["masked_marks"] = build_masked_marks(mask_tuple, strength=MASK_STRENGTH, region=MASK_REGION)
 
             # DataLoader
-            val_dataset = BurstFormerDataset(
+            val_dataset = DeepBurstDataset(
                 meta_path,
                 npy_dir,
                 val_genes,

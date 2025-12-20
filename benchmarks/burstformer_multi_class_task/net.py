@@ -60,7 +60,7 @@ class EmbeddingTransformer(nn.Module):
 
 
 
-class BurstFormerRegressor(nn.Module):
+class DeepBurstRegressor(nn.Module):
     def __init__(
         self,
         n_feats_p=7,
@@ -76,7 +76,7 @@ class BurstFormerRegressor(nn.Module):
         seed=42,
         targets = None,
     ):
-        super(BurstFormerRegressor, self).__init__()
+        super(DeepBurstRegressor, self).__init__()
         torch.manual_seed(seed)
 
         # Update arguments for each transformer layer.
@@ -155,7 +155,7 @@ class BurstFormerRegressor(nn.Module):
 if __name__ == "__main__":
 
     targets = ['bf', 'bs']
-    model = BurstFormerRegressor(targets=targets).to(DEVICE)    
+    model = DeepBurstRegressor(targets=targets).to(DEVICE)    
 
     # Dummy data.
     bsz = 8

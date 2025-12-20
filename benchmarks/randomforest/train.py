@@ -13,7 +13,7 @@ def main():
     tag = 'deeptx_delay_1'
     # meta_path = f"extra/datasets/processed/v1/meta_datasets/meta_data_{eid}.csv"
     meta_path = f"extra/datasets/processed/v1/meta_datasets/meta_data_{eid}_{tag}.csv"    
-    npy_dir = "/Volumes/ExtremeSSD/BioStudy/CodeReview/burstformer/extra/datasets/processed/v1"
+    npy_dir = "/Volumes/ExtremeSSD/BioStudy/CodeReview/DeepBurst/extra/datasets/processed/v1"
     binsizes = [500]
     print(f"Processing EID: {eid}")
 

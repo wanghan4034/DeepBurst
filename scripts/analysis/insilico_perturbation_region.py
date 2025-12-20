@@ -8,8 +8,8 @@ import pandas as pd
 from tqdm import tqdm
 from sklearn import metrics
 
-from src.model.data import BurstFormerDataset
-from src.model.net import BurstFormer
+from src.model.data import DeepBurstDataset
+from src.model.net import DeepBurst
 from src.utils.tools import seed_everything
 from src.utils.constants import DEVICE
 from src.model.constants import (
@@ -120,7 +120,7 @@ def main():
             print(f"Val gene count: {len(val_genes)} | n_feats_p={n_feats_p}")
 
             # 模型
-            model = BurstFormer(
+            model = DeepBurst(
                 n_feats_p, d_emb, d_head,
                 embed_kws=config["embed"], binsizes=binsizes, seed=42, targets=targets
             ).to(DEVICE)
@@ -131,7 +131,7 @@ def main():
             # baseline：不遮挡
             run_cfg = copy.deepcopy(config)
             run_cfg["masked_marks"] = {}
-            val_dataset = BurstFormerDataset(
+            val_dataset = DeepBurstDataset(
                 meta_path, REGION_DIR, val_genes,
                 i_max, binsizes, w_prom, w_max,
                 targets=targets, config=run_cfg, with_gene_id=True
@@ -211,7 +211,7 @@ def main():
                 }
 
                 # DataLoader
-                val_dataset = BurstFormerDataset(
+                val_dataset = DeepBurstDataset(
                     meta_path, REGION_DIR, val_genes,
                     i_max, [binsize], w_prom, w_max,
                     targets=targets, config=run_cfg, with_gene_id=True
