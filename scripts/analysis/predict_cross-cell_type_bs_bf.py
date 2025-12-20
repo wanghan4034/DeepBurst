@@ -73,7 +73,7 @@ with open("extra/datasets/results/cross_cell_type_bs_bf_para.csv",'w') as w:
 
             for fold in [0,1,2,3]:
                 print(f"train_eid:{train_eid},valid_eid:{valid_eid},fold:{fold}")
-                checkpoints = f"checkpoints/{train_eid}.{fold}.No_feature_bin.bs_bf_para.model.pt"
+                checkpoints = f"checkpoints/{train_eid}.{fold}.bs_bf_para.model.pt"
                 meta_path = f"extra/datasets/processed/v1/meta_datasets/meta_data_{valid_eid}.csv"
 
                 seed_everything(seed) 

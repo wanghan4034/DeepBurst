@@ -67,7 +67,7 @@ done
 #         for fold in 0 1 2 3
 #         do  
 #             echo "experiment $eid $fold $distance"
-#             python benchmarks/burstformer_reg_task/train.py --config configs/default.yaml --meta extra/datasets/processed/v1/meta_datasets/meta_data_$eid.csv  --npy-dir /GPUFS/sysu_jjzhang_3/wanghan/burstformer/extra/datasets/processed/v1 --fold $fold  -o benchmarks/burstformer_reg_task/checkpoints/$eid.$fold.No_feature_bin.$distance.bs_bf_para.model.pt --exp-id 2 --binsizes 500 --w_prom $distance --w_max $distance > logs/$eid.$fold.No_feature_bin.$distance.bs_bf_para.train.log 2>&1
+#             python benchmarks/burstformer_reg_task/train.py --config configs/default.yaml --meta extra/datasets/processed/v1/meta_datasets/meta_data_$eid.csv  --npy-dir /GPUFS/sysu_jjzhang_3/wanghan/burstformer/extra/datasets/processed/v1 --fold $fold  -o benchmarks/burstformer_reg_task/checkpoints/$eid.$fold.$distance.bs_bf_para.model.pt --exp-id 2 --binsizes 500 --w_prom $distance --w_max $distance > logs/$eid.$fold.$distance.bs_bf_para.train.log 2>&1
 #             sleep 120
 #         done
 #     done 
@@ -84,7 +84,7 @@ done
 #         for fold in 0 1 2 3
 #         do  
 #             echo "experiment $eid $fold"
-#             python benchmarks/burstformer_reg_task/train.py --config configs/default.yaml --meta extra/datasets/processed/v1/meta_datasets/meta_data_$eid.csv  --npy-dir /GPUFS/sysu_jjzhang_3/wanghan/burstformer/extra/datasets/processed/v1 --fold $fold  -o benchmarks/burstformer_reg_task/checkpoints/$eid.$fold.binsize_$binsize.No_feature_bin.cv.bs_bf_para.model.pt --exp-id 2 --targets cv_label --binsizes $binsize > logs/$eid.$fold.binsize_$binsize.No_feature_bin.cv.bs_bf_para.train.log 2>&1
+#             python benchmarks/burstformer_reg_task/train.py --config configs/default.yaml --meta extra/datasets/processed/v1/meta_datasets/meta_data_$eid.csv  --npy-dir /GPUFS/sysu_jjzhang_3/wanghan/burstformer/extra/datasets/processed/v1 --fold $fold  -o benchmarks/burstformer_reg_task/checkpoints/$eid.$fold.binsize_$binsize.cv.bs_bf_para.model.pt --exp-id 2 --targets cv_label --binsizes $binsize > logs/$eid.$fold.binsize_$binsize.cv.bs_bf_para.train.log 2>&1
 #             sleep 120
 #         done
 #     done 

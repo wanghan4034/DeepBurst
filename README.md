@@ -189,7 +189,7 @@ model = BurstFormer(
 # H1 cell line, fold 0
 eid = 'E003'
 fold = '0'
-ckpt = torch.load(f"checkpoints/{eid}.{fold}.No_feature_bin.bs_bf_para.model.pt", map_location=DEVICE)
+ckpt = torch.load(f"checkpoints/{eid}.{fold}.bs_bf_para.model.pt", map_location=DEVICE)
 model.load_state_dict(ckpt["net"])
 
 model.eval()

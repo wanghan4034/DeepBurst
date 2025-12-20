@@ -69,7 +69,7 @@ for eid in ["E116","E118","E003"]:
         config['marked_bin_idxes'] = [i for i in range(80) if i not in keep_bins]
         for fold in [0,1,2,3]:
             print(f"eid:{eid},fold:{fold}")
-            checkpoints = f"checkpoints/{eid}.remove_{remove_marks}.{fold}.No_feature_bin.bs_bf_para.model.pt"
+            checkpoints = f"checkpoints/{eid}.remove_{remove_marks}.{fold}.bs_bf_para.model.pt"
 
             meta_path = f"extra/datasets/processed/v1/meta_datasets/meta_data_{eid}.csv"
 

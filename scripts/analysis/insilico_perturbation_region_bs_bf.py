@@ -79,9 +79,9 @@ for eid in ["E116","E118","E003"]:
             for fold in [0,1,2,3]:
                 print(f"eid:{eid},fold:{fold}")
                 if remove_marks:
-                    checkpoints = f"checkpoints/{eid}.remove_{model_tag}.{fold}.No_feature_bin.bs_bf_para.model.pt"
+                    checkpoints = f"checkpoints/{eid}.remove_{model_tag}.{fold}.bs_bf_para.model.pt"
                 else :
-                    checkpoints = f"checkpoints/{eid}.{fold}.No_feature_bin.bs_bf_para.model.pt"
+                    checkpoints = f"checkpoints/{eid}.{fold}.bs_bf_para.model.pt"
 
 
                 meta_path = f"extra/datasets/processed/v1/meta_datasets/meta_data_{eid}.csv"

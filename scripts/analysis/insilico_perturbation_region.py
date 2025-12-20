@@ -99,7 +99,7 @@ def main():
 
             # 路径
             meta_path  = os.path.join(META_DIR, f"meta_data_{eid}.csv")
-            ckpt_path  = os.path.join(CHECKPOINT_DIR, f"{eid}.{fold}.No_feature_bin.bs_bf_para.model.pt")
+            ckpt_path  = os.path.join(CHECKPOINT_DIR, f"{eid}.{fold}.bs_bf_para.model.pt")
 
             # 读 meta 并构建染色体分组
             meta = pd.read_csv(meta_path).sample(frac=1, random_state=seed).reset_index(drop=True)

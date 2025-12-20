@@ -75,7 +75,7 @@ with open("extra/datasets/results/cell_type_agnostic_cv_para.csv",'w') as w:
         for fold in [0,1,2,3]:
             print(f"eid:{eid},fold:{fold}")
             # checkpoints = f"checkpoints/{eid}.{fold}.model.pt"
-            checkpoints = f"checkpoints/agnostic.{fold}.No_feature_bin.cv_para.model.pt"
+            checkpoints = f"checkpoints/agnostic.{fold}.cv_para.model.pt"
             meta_path = f"extra/datasets/processed/v1/meta_datasets/meta_data_{eid}.csv"
 
             #

@@ -70,7 +70,7 @@ predictions = []
 for eid in ["E003"]:
     for fold in [0,1,2,3]:
         print(f"eid:{eid},fold:{fold}")
-        checkpoints = f"checkpoints/{eid}.{fold}.No_feature_bin.bs_bf_para.model.pt"
+        checkpoints = f"checkpoints/{eid}.{fold}.bs_bf_para.model.pt"
 
         meta_path = f"extra/datasets/processed/v1/random_seq_enformer_prediction/random_sample_prediction_index.csv"
 
