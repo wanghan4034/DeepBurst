@@ -11,7 +11,7 @@ The transcription-start-site–centered embedding extracted from the Transformer
 
 Once trained, the model supports downstream analyses including genome-wide bursting-state prediction from histone profiles, identification of informative histone marks and genomic positions, and in silico perturbation analyses that prioritize histone-signal changes predicted to shift genes between bursting states.
 
-# **Model Training**
+# **Model training**
 
 This repository provides the training pipeline for predicting transcriptional burst dynamics using histone modification features and burst labels.
 
@@ -30,15 +30,13 @@ Key packages include:
 - scanpy, anndata – single-cell data utilities
 - matplotlib, seaborn – visualization
 
-## Workflow
+## Training  and prediction
 
-### **Prepare Data**
+### **Prepare data**
 
 Use the preprocessed histone modification features and burst labels generated in the preprocessing step.
 
-
-
-### **Training Demo**
+### **Training demo**
 
 Example: training on three cell lines (**E003, E116, E118**) with 4-fold cross-validation:
 
@@ -162,37 +160,7 @@ print(description)
 
 
 
-## **System Requirements**
-
-DeepBurst was trained on a server equipped with 28 Intel(R) Xeon(R) Gold 6132 CPUs @ 2.60GHz, 60 GB RAM, and 1 NVIDIA A100 GPU with 16 GB memory. 
-
-### **Hardware**
-
-- CPU: ≥ 6 cores, 2.40+ GHz
-- GPU: ≥ 16 GB memory
-- RAM: ≥ 16 GB
-
-### **Software**
-
-- **OS:** Ubuntu 22.04 (tested)
-- **Python:** 3.10.14
-- **PyTorch:** 1.13.0 (CUDA 11.2)
-- **Other packages:**
-  - numpy 1.23.5
-  - pandas 2.2.3
-  - scikit-learn 1.5.2
-  - tqdm 4.66.5
-  - scanpy 1.10.3
-  - matplotlib 3.9.2
-
-### **Command-line tools (for preprocessing)**
-
-- sambamba 1.0.1
-- bedtools 2.31.1
-
-
-
-## **Design**
+# **Design**
 
 This script provides a minimal, end-to-end demo of **DeepBurst** inference and evaluation using synthetic inputs. It is intended as a **sanity check** for model loading, forward pass, output parsing, and metric computation.
 
@@ -202,7 +170,7 @@ This script provides a minimal, end-to-end demo of **DeepBurst** inference and e
 
 2. **Model instantiation and checkpoint loading**
 
-   A DeepBurst model is instantiated using hyperparameters from configs/default.yaml. A trained checkpoint is then loaded based on the selected **cell line ID (****eid****)** and **chromosome-fold (****fold****)** (e.g., E003 fold 0). The model is switched to evaluation mode to ensure deterministic inference behavior.
+   A DeepBurst model is instantiated using hyperparameters from configs/default.yaml. A trained checkpoint is then loaded based on the selected **cell line ID (**eid**)** and **chromosome-fold (**fold**)** (e.g., E003 fold 0). The model is switched to evaluation mode to ensure deterministic inference behavior.
 
 3. **Multi-target output handling**
 
@@ -212,8 +180,6 @@ This script provides a minimal, end-to-end demo of **DeepBurst** inference and e
    - per-target predictions (val_preds[target])
    - per-target labels (val_labels[target])
 
-   
-
 4. **Evaluation metrics**
 
    For each target, the script computes:
@@ -222,4 +188,30 @@ This script provides a minimal, end-to-end demo of **DeepBurst** inference and e
 
      Metrics are reported independently for each target to make it easy to verify that the output format and downstream evaluation pipeline are correct.
 
-   
+# **System Requirements**
+
+## **Training DeepBurst**
+
+DeepBurst is trained on a server equipped with **28 Intel(R) Xeon(R) Gold 6132 CPUs @ 2.60GHz**, **60 GB RAM**, and **one NVIDIA V100 GPU (16 GB VRAM)**. With sufficient GPU memory, training is also feasible on modern consumer GPUs such as the **RTX 4090**.
+
+### **Hardware**
+
+- **CPU:** ≥ 6 cores, ≥ 2.40 GHz
+- **GPU:** ≥ 16 GB VRAM
+- **RAM:** ≥ 16 GB
+
+### **Software**
+
+- **OS:** Ubuntu 22.04 (tested)
+- **Python:** 3.10.14
+- **PyTorch:** 1.13.0 (CUDA 11.2)
+- **Other Key Python packages are listed in requirements.txt**
+
+### **Command-line tools (for preprocessing)**
+
+- sambamba 1.0.1
+- bedtools 2.31.1
+
+## **Design / Enformer-based inference**
+
+During the design and analysis stage, we run **Enformer** to generate sequence-based predictions using **DeepMind’s official TensorFlow implementation** and the **official pre-trained model checkpoints**. Inference in this project is performed on an **NVIDIA A800 GPU (80 GB VRAM)**. Once histone modification features are prepared, running **DeepBurst** inference follows the same hardware and software configuration described above.
