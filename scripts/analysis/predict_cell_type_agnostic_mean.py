@@ -65,7 +65,7 @@ npy_dir = "extra/datasets/processed/v1"
 
 binsizes = [500]
 
-with open("extra/datasets/results/cell_type_agnostic_mean_para.csv",'w') as w:
+with open("extra/results/cell_type_agnostic_mean_para.csv",'w') as w:
     columns = ['mean_auc','fold','eid']
     w.write('\t'.join(columns)+'\n')
     for eid in ["E116","E118","E003"]:

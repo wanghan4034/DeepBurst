@@ -68,7 +68,7 @@ binsizes = [500]
 # eid = "E116"
 # fold = 0
 # remove_marks = "remove_H3K9me3."
-with open("extra/datasets/results/cell_type_agnostic_cv_para.csv",'w') as w:
+with open("extra/results/cell_type_agnostic_cv_para.csv",'w') as w:
     columns = ['cv_auc','fold','eid']
     w.write('\t'.join(columns)+'\n')
     for eid in ["E116","E118","E003"]:

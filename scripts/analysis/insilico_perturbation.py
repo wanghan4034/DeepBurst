@@ -236,7 +236,7 @@ for eid in ["E116", "E118", "E003"]:
 predictions = pd.concat(predictions, axis=0).reset_index(drop=True)
 
 # 保存（按需要解注释）
-out_csv = f"extra/datasets/results/perturbation_masks_mode-{MASK_MODE}-masks_strength-{MASK_STRENGTH}.csv"
+out_csv = f"extra/results/perturbation_masks_mode-{MASK_MODE}-masks_strength-{MASK_STRENGTH}.csv"
 predictions.to_csv(out_csv, index=False)
 print("Saved to:", out_csv)
 

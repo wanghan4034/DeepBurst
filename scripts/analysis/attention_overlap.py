@@ -300,7 +300,7 @@ def summarize_overlap(df):
 # ---------------------- 示例运行 ----------------------
 if __name__ == "__main__":
     # eid = "E003"
-    data = pd.read_csv(f"extra/datasets/results/predictions_bs_bf.csv")
+    data = pd.read_csv(f"extra/results/predictions_bs_bf.csv")
     data = data[data['eid'] == eid]
 
     cres_infos = get_cres_infos('extra/datasets/genomic/GRCh19-cCREs.bed')
@@ -308,6 +308,6 @@ if __name__ == "__main__":
 
     df_overlap = compute_attention_overlap(data, datasets, models, cres_infos, gene_infos,
                                            threshold=0.1,
-                                           out_path=f"extra/datasets/results/attention_overlap_{eid}.csv")
+                                           out_path=f"extra/results/attention_overlap_{eid}.csv")
 
     summarize_overlap(df_overlap)

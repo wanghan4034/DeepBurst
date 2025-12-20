@@ -65,7 +65,7 @@ npy_dir = "extra/datasets/processed/v1"
 binsizes = [500]
 
 
-with open("extra/datasets/results/cross_cell_type_bs_bf_para.csv",'w') as w:
+with open("extra/results/cross_cell_type_bs_bf_para.csv",'w') as w:
     columns = ['bs_auc','bf_auc','fold','train_eid','valid_eid']
     w.write('\t'.join(columns)+'\n')
     for train_eid in ["E116","E118","E003"]:

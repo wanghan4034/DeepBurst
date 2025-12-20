@@ -208,9 +208,9 @@ for eid in ["E116","E118","E003"]:
 
 predictions = pd.concat(predictions,axis=0)
 if remove_marks:
-    predictions.to_csv(f'extra/datasets/results/remove_{remove_marks}_predictions_bs_bf.csv',index=False)
+    predictions.to_csv(f'extra/results/remove_{remove_marks}_predictions_bs_bf.csv',index=False)
 else:
-    predictions.to_csv(f'extra/datasets/results/predictions_bs_bf.csv',index=False)
+    predictions.to_csv(f'extra/results/predictions_bs_bf.csv',index=False)
 
 
 if __name__ == '__main__':

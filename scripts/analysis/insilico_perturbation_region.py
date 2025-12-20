@@ -40,7 +40,7 @@ STRIDE_BINS       = 1      # 步长；=1 表示每 500bp 移动一次
 MASK_STRENGTH     = 0.0    # 0=完全抹除；0.5=减半；>1=增强
 
 # 输出
-OUT_CSV           = f"extra/datasets/results/slide_perturbation_{BINSIZE_BP}bp_k{SLIDE_K_BINS}_s{STRIDE_BINS}_ALL_MARKS.csv"
+OUT_CSV           = f"extra/results/slide_perturbation_{BINSIZE_BP}bp_k{SLIDE_K_BINS}_s{STRIDE_BINS}_ALL_MARKS.csv"
 
 # 是否保存预测的 argmax（可选）
 SAVE_PRED         = True

@@ -227,7 +227,7 @@ for eid in ["E116","E118","E003"]:
             print(description)
     print(f'EID:{eid}, Done')
 predictions = pd.concat(predictions,axis=0)
-predictions.to_csv(f'extra/datasets/results/keep_marks_predictions_bs_bf.csv',index=False)
+predictions.to_csv(f'extra/results/keep_marks_predictions_bs_bf.csv',index=False)
 
 
 if __name__ == '__main__':
