@@ -1,0 +1,100 @@
+import pandas as pd
+
+wildcard_constraints:
+    eid = '[^.]+',
+    mark = '[^.]+',
+
+hg19_sizes = 'extra/datasets/annotations/hg19/hg19.fa.sizes'
+
+eids = [
+    'E003',
+    'E116',
+    'E118'
+]
+
+marks = [
+    'H3K4me1',
+    'H3K4me3',
+    'H3K9me3',
+    'H3K27me3',
+    'H3K36me3',
+    'H3K27ac',
+    'H3K9ac',
+]
+
+tissue_mapping = pd.read_csv('extra/datasets/annotations/tissue_mapping.csv')
+eid2tissue = {r.eid:r.tissue for r in tissue_mapping.to_records()}
+
+# eids = ['E114']
+tissues = [eid2tissue[eid] for eid in eids]
+
+# Register target files. 
+tagalign = expand('extra/datasets/hist/{eid}-{mark}.sorted.bam.bai', eid=eids, mark=marks)
+coverage = expand('extra/datasets/hist/{eid}-{mark}.sorted.bedGraph', eid=eids, mark=marks)
+bigwig = expand('extra/datasets/epigenetic/hg19/{eid}-{mark}.bw', eid=eids, mark=marks)
+signals = expand('data/{eid}/.done', eid=eids)
+
+
+ALL = []
+ALL.append(tagalign)
+ALL.append(coverage)
+ALL.append(bigwig) 
+# ALL.append(signals)
+
+rule all:
+    input: ALL
+
+rule download_chip_tagalign:
+    output: temp('extra/datasets/hist/{eid}-{mark}.tagAlign')
+    resources: network = 1
+    benchmark: 'benchmarks/download_chip_tagalign/{eid}-{mark}.tsv'
+    shell:
+        'wget "https://egg2.wustl.edu/roadmap/data/byFileType/alignments/consolidated/{wildcards.eid}-{wildcards.mark}.tagAlign.gz" -O- | gunzip -c > {output}'
+
+
+rule bedtobam:
+    input: 'extra/datasets/hist/{eid}-{mark}.tagAlign'
+    output: temp('extra/datasets/hist/{eid}-{mark}.bam')
+    benchmark: 'benchmarks/bedtobam/{eid}-{mark}.tsv'
+    shell:
+        'bedtools bedtobam -i {input} -g {hg19_sizes} > {output}'
+
+rule sambamba_sort:
+    input: 'extra/datasets/hist/{eid}-{mark}.bam'
+    output: 'extra/datasets/hist/{eid}-{mark}.sorted.bam'
+    threads: 4
+    benchmark: 'benchmarks/sambamba_sort/{eid}-{mark}.tsv'
+    shell:
+        'sambamba sort -o {output} -t {threads} --tmpdir . {input}'
+
+rule sambamba_index:
+    input: 'extra/datasets/hist/{eid}-{mark}.sorted.bam'
+    output: 'extra/datasets/hist/{eid}-{mark}.sorted.bam.bai'
+    threads: 4
+    benchmark: 'benchmarks/sambamba_index/{eid}-{mark}.tsv'
+    shell:
+        'sambamba index -t {threads} {input}'
+
+rule bedtools_genomecov:
+    input:
+        bam = 'extra/datasets/hist/{eid}-{mark}.sorted.bam',
+        bai = 'extra/datasets/hist/{eid}-{mark}.sorted.bam.bai',
+    output: 'extra/datasets/hist/{eid}-{mark}.sorted.bedGraph'
+    benchmark: 'benchmarks/bedtools_genomecov/{eid}-{mark}.tsv'
+    shell:
+        'bedtools genomecov -ibam '
+        '{input.bam} -bga | '
+        'bedtools sort -i stdin > {output}'
+
+rule bedgraph_to_bigwig:
+    input:
+        bedgraph = 'extra/datasets/hist/{eid}-{mark}.sorted.bedGraph',
+        sizes = hg19_sizes
+    output:
+        'extra/datasets/epigenetic/hg19/{eid}-{mark}.bw'
+    benchmark:
+        'benchmarks/bedgraph_to_bigwig/{eid}-{mark}.tsv'
+    shell:
+        """
+        bedGraphToBigWig {input.bedgraph} {input.sizes} {output}
+        """
