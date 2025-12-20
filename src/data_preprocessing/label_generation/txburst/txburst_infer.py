@@ -6,8 +6,8 @@ import argparse
 from scipy.io import mmread
 from joblib import delayed,Parallel
 from tqdm import tqdm
-from src.data.burst.preprocess import sc_preprocess
-from src.data.burst.txburstML import MaximumLikelihood, whichKeep
+from src.data_preprocessing.label_generation.txburst.preprocess import sc_preprocess
+from src.data_preprocessing.label_generation.txburst.txburstML import MaximumLikelihood, whichKeep
 
 from src.utils.logs import get_logger
 logger = get_logger()
