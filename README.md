@@ -36,6 +36,8 @@ Key packages include:
 
 Use the preprocessed histone modification features and burst labels generated in the preprocessing step.
 
+
+
 ### **Training Demo**
 
 Example: training on three cell lines (**E003, E116, E118**) with 4-fold cross-validation:
@@ -59,98 +61,15 @@ do
 done
 ```
 
-### **Configuration File**
-
-The training configuration file is a YAML file (e.g. configs/default.yaml) that specifies model, optimization, and biological parameters.
-
-```
-seed: 123
-# Data Loader 
-marks: "H3K4me1\tH3K4me3\tH3K9me3\tH3K27me3\tH3K36me3\tH3K27ac\tH3K9ac"
-base_maps: "A:0\tC:1\tG:2\tT:3"
-
-promoter_with_sequence: False  # promoter add sequence statistic feature
-pcres_with_sequence: False  # pcres add sequence statistic feature
-
-# Optimization.
-num_epoch: 20
-lr: 3e-3
-bsz: 64
-gamma: 0.87
-num_works: 8
-patience: 20
-
-# Data processing.
-i_max: 8
-w_prom: 40000
-w_max: 40000
-
-# Model specification.
-n_feats: 11
-feature_bin_kws:
-  in_channels: 4
-  out_channels: 16
-  kernel_size: 6
-  dilation: 1
-  padding: 'same'
-  add_feature_bin: True
-embed:
-  n_layers: 1
-  n_heads: 2
-  d_model: 128
-  d_ff: 128
-pairwise_interaction:
-  n_layers: 2
-  n_heads: 2
-  d_model: 128
-  d_ff: 256
-  n_feats_pcre: 11
-regulation:
-  n_layers: 6
-  n_heads: 8
-  d_model: 256
-  d_ff: 256
-
-d_head: 128
-```
-
-
-
-### **Metadata**
-
-The metadata file is a .csv containing gene-level annotations, expression values, and burst labels.
-
-| **Column name** | **Description**                               |
-| --------------- | --------------------------------------------- |
-| gene_id         | Gene identifier (e.g., ENSG00000122417)       |
-| eid             | Experiment / cell line ID (e.g., E003 for H1) |
-| chrom           | Chromosome of gene                            |
-| start           | TSS start coordinate (0-based, inclusive)     |
-| end             | TSS end coordinate (0-based, exclusive)       |
-| strand          | Strand (+ or -)                               |
-| bs              | Burst size                                    |
-| bf              | Burst frequency                               |
-| k_on            | Burst initiation rate                         |
-| k_off           | Burst termination rate                        |
-| k_syn           | mRNA synthesis rate                           |
-| gene_name       | Gene symbol                                   |
-| bulk_exp        | Bulk RNA-seq expression level                 |
-| mean            | Mean single-cell expression                   |
-| bulk_exp_label  | Binary label based on bulk expression         |
-| sc_exp_label    | Binary label based on single-cell expression  |
-| bs_label        | Binary label for burst size                   |
-| bf_label        | Binary label for burst frequency              |
-| mean_label      | Binary label for mean expression              |
-
 ### **Prediction Demo**
 
-Below is a complete demo showing how to perform random-input prediction using the BurstFormer model.
+Below is a complete demo showing how to perform random-input prediction using the DeepBurst model.
 
 This demo generates random histone marks' signals , passes them through the model, computes dual-softmax probabilities and evaluates the results.
 
 ```
 # ==========================================
-# BurstFormer Random Prediction Demo (with Mask)
+# DeepBurst Random Prediction Demo (with Mask)
 # ==========================================
 
 import torch
@@ -176,9 +95,9 @@ print(labels[:5])
 print("inputs:", inputs.shape)
 
 # -----------------------------
-# 2. Load BurstFormer
+# 2. Load DeepBurst
 # -----------------------------
-from src.model.net import  BurstFormer
+from src.model.net import  DeepBurst
 
 n_feats_p = n_feats
 d_head = 128
@@ -188,7 +107,7 @@ d_head = config["d_head"]
 binsizes = [500]
 targets = ['bs_label','bf_label']
 
-model = BurstFormer(
+model = DeepBurst(
     n_feats_p,
     d_emb,
     d_head,
@@ -245,7 +164,7 @@ print(description)
 
 ## **System Requirements**
 
-BurstFormer was trained on a server equipped with 28 Intel(R) Xeon(R) Gold 6132 CPUs @ 2.60GHz, 60 GB RAM, and 1 NVIDIA A100 GPU with 16 GB memory. 
+DeepBurst was trained on a server equipped with 28 Intel(R) Xeon(R) Gold 6132 CPUs @ 2.60GHz, 60 GB RAM, and 1 NVIDIA A100 GPU with 16 GB memory. 
 
 ### **Hardware**
 
@@ -270,3 +189,37 @@ BurstFormer was trained on a server equipped with 28 Intel(R) Xeon(R) Gold 6132 
 
 - sambamba 1.0.1
 - bedtools 2.31.1
+
+
+
+## **Design**
+
+This script provides a minimal, end-to-end demo of **DeepBurst** inference and evaluation using synthetic inputs. It is intended as a **sanity check** for model loading, forward pass, output parsing, and metric computation.
+
+1. **Synthetic batch construction**
+
+   The script creates a simulated promoter-feature tensor inputs with shape (batch_size, 1, seq_len, n_feats) and corresponding binary labels labels with shape (batch_size, 2), where the two label columns align with the two prediction targets.
+
+2. **Model instantiation and checkpoint loading**
+
+   A DeepBurst model is instantiated using hyperparameters from configs/default.yaml. A trained checkpoint is then loaded based on the selected **cell line ID (****eid****)** and **chromosome-fold (****fold****)** (e.g., E003 fold 0). The model is switched to evaluation mode to ensure deterministic inference behavior.
+
+3. **Multi-target output handling**
+
+   The model outputs a single tensor of logits that concatenates predictions for multiple targets along the last dimension. The script splits this tensor into per-target logits using torch.chunk, ensuring a one-to-one mapping between:
+
+   - targets = ['bs_label', 'bf_label']
+   - per-target predictions (val_preds[target])
+   - per-target labels (val_labels[target])
+
+   
+
+4. **Evaluation metrics**
+
+   For each target, the script computes:
+
+   - **ROC-AUC** based on the positive-class probability from softmax
+
+     Metrics are reported independently for each target to make it easy to verify that the output format and downstream evaluation pipeline are correct.
+
+   
