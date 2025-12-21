@@ -6,11 +6,15 @@ For each gene, the local regulatory context is represented by a **40 kb window**
 
 Supervisory labels are derived by inferring gene-specific bursting parameters from matched single-cell RNA-seq data using stochastic transcription models, and aligning these estimates with histone profiles from the same cell line. Because capture efficiency, cell type, and inference pipelines can introduce systematic shifts in continuous kinetic estimates, DeepBurst is trained as a **binary classification** model rather than a regression model. Within each cell line, genes are labeled as **high/low burst frequency** and **high/low burst size** using **median-based thresholds**, yielding robust training targets.
 
-The TSS-centered embedding extracted from the Transformer output is passed through fully connected layers and two parallel binary classifiers to predict burst frequency and burst size labels. Model training and evaluation are performed **separately per cell type** using **four-fold chromosome-split cross-validation** to reduce the risk of information leakage between training and validation sets.
+The TSS-centered embedding extracted from the Transformer output is passed through fully connected layers and two parallel binary classifiers to predict burst frequency and burst size labels. Model training and evaluation are performed **separately per cell type** using **4-fold chromosome-split cross-validation** to reduce the risk of information leakage between training and validation sets.
 
 Once trained, DeepBurst supports downstream analyses including genome-wide bursting-state prediction from histone profiles, identification of informative histone marks and genomic positions, and **in silico perturbation** analyses that prioritize histone-signal changes predicted to shift genes between bursting states.
 
+This repository contains all experimental results reported in the paper, including data preprocessing, model training, model inference, interpretability analyses, and the design module. To reproduce the results from scratch, first clone the repository:
 
+```bash
+git clone git@github.com:wanghan4034/DeepBurst.git
+```
 
 # **Data preprocessing**
 
@@ -64,7 +68,7 @@ Pkg.add([
 
 ## **Histone modification feature generation**
 
-<img src="img/histone_mark_preprocessing.png" alt="histone_mark_preprocessing" style="zoom:100%;" />
+<img src="img/histone_mark_preprocessing.png" alt="histone_mark_preprocessing" style="zoom:80%;" />
 
 ### **1. Download and preprocessing**
 
@@ -99,13 +103,9 @@ python src/data/data_process.py \
 - --epi_dir: Directory containing histone modification tracks
 - -o: Output directory
 
-
-
 **Outputs**
 
 - Per-gene histone feature matrices (e.g., .csv / .npy, depending on configuration)
-
-
 
 ## **Burst label generation**
 
@@ -128,8 +128,6 @@ python src/data_preprocessing/label_generation/txburst/txburst_infer.py --cell_t
 ```
 julia TX_inferrer.jl data/H1_scRNA.csv inferred_results.csv
 ```
-
-
 
 - Output: **continuous** bursting parameters in .csv
 
@@ -202,7 +200,7 @@ done
 
 Below is a minimal, end-to-end example showing how to run inference with **DeepBurst** using synthetic inputs. The script (i) generates random histone-mark signals, (ii) performs a forward pass, (iii) converts logits to probabilities, and (iv) extracts per-target predictions.
 
-Import required packages and load the configuration:
+**Import required packages and load the configuration:**
 
 ```
 import torch
@@ -215,7 +213,7 @@ config_path = "configs/default.yaml"
 config = get_config(config_path)
 ```
 
-Create synthetic histone-mark inputs:
+**Create synthetic histone-mark inputs:**
 
 ```
 # -----------------------------
@@ -233,7 +231,7 @@ print(labels[:5])
 print("inputs:", inputs.shape)
 ```
 
-Instantiate the model and load a trained checkpoint:
+**Instantiate the model and load a trained checkpoint:**
 
 ```
 # -----------------------------
@@ -265,7 +263,7 @@ ckpt = torch.load(f"checkpoints/{eid}.{fold}.bs_bf_para.model.pt", map_location=
 model.load_state_dict(ckpt["net"])
 ```
 
-Run prediction and parse outputs:
+**Run prediction and parse outputs:**
 
 ```
 model.eval()
@@ -288,7 +286,7 @@ for target, target_out in zip(targets, torch.chunk(out, len(targets), dim=-1)):
 
 More analysis scripts (e.g., cell-type–specific vs. cell-type–agnostic inference, cross-cell-type evaluation, single-mark prediction, and in silico perturbation) are located under scripts/analysis/. All plotting scripts used in the manuscript are under scripts/figures/.
 
-# **Design**
+# **Design bursting kinetics for target genes**
 
 Because **Enformer** inference relies on **TensorFlow 2.18**, its software stack differs from **DeepBurst** (PyTorch) and typically comes with higher hardware requirements. To avoid Python dependency and environment conflicts, we maintain the Enformer inference workflow in a separate repository: [**Enformer-Inference**](https://github.com/wanghan4034/Enformer-Inference)
 
@@ -310,14 +308,11 @@ If you have already cloned the main repository but have not initialized submodul
 
 ```
 git submodule update --init --recursive
-<img src="img/design_module.png" alt="design_module" style="zoom:100%;" />
 ```
 
 **Enformer-Inference** is responsible for predicting histone modification signals from DNA sequence (the histone-mark simulation module). On one hand, it can directly predict histone-mark profiles for specific cell lines from sequence (e.g., **H1 / E003**). On the other hand, we encapsulate a **random perturbation** strategy in this repository and use it as a simulator of histone-mark distributions to generate perturbed candidate profiles. For detailed usage, please refer to the README.md in the **Enformer-Inference** repository.
 
-
-
-Once histone-mark signals are obtained, we use **DeepBurst** as the core of the design module to predict and validate **burst frequency** and **burst size **. In addition, you can use plot_tracks to visualize and inspect the resulting histone-mark distributions. more details in scripts
+Once histone-mark signals are obtained, **DeepBurst** serves as the core of the design module to predict and validate **burst frequency** and **burst size**. In addition, the plot_tracks utility can be used to visualize and inspect the resulting histone-mark distributions. Further details and analysis workflows are provided in [scripts/analysis/](https://github.com/wanghan4034/DeepBurst/tree/master/scripts/analysis) and [**Enformer-Inference**](https://github.com/wanghan4034/Enformer-Inference).
 
 
 
