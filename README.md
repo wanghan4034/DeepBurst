@@ -28,7 +28,7 @@ Cell lines are indexed using Roadmap Epigenomics **EID** identifiers defined in 
 
 ### **For histone feature extraction and burst-label preprocessing (Python)**
 
-python3.10, All dependencies are listed in requirements.txt. Install with:
+Python **3.10** is required. All dependencies are listed in requirements.txt and can be installed with:
 
 ```
 pip install -r requirements.txt
