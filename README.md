@@ -72,7 +72,7 @@ Pkg.add([
 
 ### **1. Download and preprocessing**
 
-We downloaded the raw **TagAlign** files from the specified [data source. We then used **bedtools** to convert TagAlign to **BAM**, and used **sambamba** to sort and index the BAM files. Next, we ran **bedtools genomecov** to compute base-level genome-wide coverage in the **hg19** reference coordinate system, and exported the results as **bigWig** files for downstream feature construction.
+We downloaded the raw **TagAlign** files from  [Roadmap Epigenomics Web Portal](https://egg2.wustl.edu/roadmap/web_portal/). We then used **bedtools** to convert TagAlign to **BAM**, and used **sambamba** to sort and index the BAM files. Next, we ran **bedtools genomecov** to compute base-level genome-wide coverage in the **hg19** reference coordinate system, and exported the results as **bigWig** files for downstream feature construction.
 
 This workflow is encapsulated in src/data_preprocessing/Snakefile and can be executed with:
 
