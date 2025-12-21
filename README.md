@@ -11,40 +11,158 @@ The transcription-start-site–centered embedding extracted from the Transformer
 
 Once trained, the model supports downstream analyses including genome-wide bursting-state prediction from histone profiles, identification of informative histone marks and genomic positions, and in silico perturbation analyses that prioritize histone-signal changes predicted to shift genes between bursting states.
 
-# **Model training**
+# **Data Preprocessing**
 
-This repository provides the training pipeline for predicting transcriptional burst dynamics using histone modification features and burst labels.
+This repository provides preprocessing scripts for constructing model-ready datasets for transcriptional burst prediction. The pipeline integrates **histone modification features** with **bursting labels** (burst frequency and burst size, including expression and noise), and produces standardized inputs for downstream training and evaluation. **Cell lines are indexed using Roadmap Epigenomics **EID identifiers, as defined in the **Roadmap 2015** reference epigenome compendium; in this repository, E003 corresponds to H1, E118 corresponds to HepG2, and E116 corresponds to GM12878.
+
+
 
 ## **Dependencies**
 
+### **For histone feature extraction and burst-label preprocessing (Python)**
+
 All dependencies are listed in requirements.txt. Install with:
+
+```
+pip install requirements.txt
+```
+
+### **For DeepTX-based kinetic inference (Julia)**
+
+- Julia ≥ 1.7.3
+- Required Julia packages:
+
+```
+Pkg.add([
+  "Flux",
+  "CSV",
+  "DataFrames",
+  "JLD2",
+  "Distributions",
+  "StatsBase",
+  "SpecialFunctions",
+  "ZygoteRules",
+  "Catalyst",
+  "BlackBoxOptim",
+  "Sobol",
+  "Distances",
+  "OptimalTransport",
+  "ProgressMeter",
+  "MAT",
+  "Interp1d"
+])
+```
+
+## **Histone Modification Feature Generation**
+
+![image-20251221095352066](img/data_processing.png)
+
+### **1.Download and Preprocessing**
+
+我们从指定[数据源](https://egg2.wustl.edu/roadmap/data/byFileType/alignments/consolidated/)下载原始 **TagAlign** 格式文件。随后使用 **bedtools** 将 TagAlign 转换为 **BAM**，并通过 **sambamba** 对 BAM 文件进行排序与建立索引。接着，使用 **bedtools genomecov** 在 **hg19** 参考基因组坐标系下计算全基因组的碱基级覆盖度，并将结果导出为 **bigWig** 文件，供后续特征构建使用。
+
+上述流程已封装在 src/data_preprocessing/Snakefile 中，可通过以下命令一键执行：
+
+```
+snakemake -s src/data_preprocessing/Snakefile -j 8
+```
+
+### **2. Histone Modification Feature Generation**
+
+The examples below demonstrate the workflow for the **H1 (E003) cell line**. Histone modification signals are extracted from epigenomic tracks and aggregated into per-gene feature matrices.
+
+**Command (H1 / E003):**
+
+```
+python src/data/data_process.py \
+  --eid E003 \
+  --gene extra/datasets/genomic/hg19/genes.bed \
+  --epi_dir extra/datasets/epigenetic/hg19 \
+  -o extra/datasets/processed/v2
+```
+
+**Arguments**
+
+- --eid: Experiment / cell line ID (e.g., E003 for H1)
+- --gene: Gene annotation file in BED format
+- --epi_dir: Directory containing histone modification tracks
+- -o: Output directory
+
+**Outputs**
+
+- Per-gene histone feature matrices (e.g., .csv / .npy, depending on configuration)
+
+
+
+## **2. Burst Label Generation**
+
+Burst frequency and burst size are inferred from UMI count data (scRNA-data), and then converted into binary labels.
+
+#### **Step 1 — Infer bursting kinetics**
+
+**txburst**
+
+```
+python src/data_preprocessing/label_generation/txburst/txburst_infer.py --cell_type H1
+```
+
+- Output: **continuous** burst kinetics parameters in .csv format
+
+**DeepTX**
+
+```
+julia TX_inferrer.jl data/H1_scRNA.csv inferred_results.csv
+```
+
+- Output: **continuous** burst kinetics parameters in .csv format
+
+#### **Step 2 — Convert kinetics into burst labels**
+
+```
+python src/data/burst/data_convert.py \
+  --eid E003 \
+  --gene_id2neighbors extra/datasets/processed/v1/E003/gene_id2neighbors_E003.csv \
+  -o extra/datasets/processed/v1/meta_datasets
+```
+
+**Outputs**
+
+- Binary burst labels and related quantities per gene (e.g., BF/BS labels, expression/noise labels) in meta_data.csv
+
+### **3. Final Outputs**
+
+After preprocessing, the pipeline produces:
+
+- **Histone modification features**: per-gene profiles across histone marks
+- **Burst labels**: per-gene BF/BS (and optional expression/noise) labels
+
+
+
+# **Model training and prediction **
+
+This repository provides a training pipeline for predicting transcriptional burst dynamics from histone modification features and burst-related labels.
+
+## **Dependencies**
+
+All dependencies are listed in requirements.txt. Install them with:
 
 ```
 pip install -r requirements.txt
 ```
 
-Key packages include:
 
-- torch – deep learning framework
-- numpy, pandas, scipy, scikit-learn – data handling and analysis
-- scanpy, anndata – single-cell data utilities
-- matplotlib, seaborn – visualization
 
-## Training  and prediction
-
-### **Prepare data**
-
-Use the preprocessed histone modification features and burst labels generated in the preprocessing step.
+## **Training and prediction**
 
 ### **Training demo**
 
-Example: training on three cell lines (**E003, E116, E118**) with 4-fold cross-validation:
+Example: training on three Roadmap cell lines (**E003, E116, E118**) with 4-fold cross-validation:
 
 ```
 for eid in E003 E116 E118
 do
     for fold in 0 1 2 3
-    do  
+    do
         echo "experiment $eid $fold"
         python train.py \
             --config configs/default.yaml \
@@ -59,54 +177,60 @@ do
 done
 ```
 
-### **Prediction Demo**
 
-Below is a complete demo showing how to perform random-input prediction using the DeepBurst model.
 
-This demo generates random histone marks' signals , passes them through the model, computes dual-softmax probabilities and evaluates the results.
+### **Prediction demo (random inputs)**
+
+Below is a minimal, end-to-end example showing how to run inference with **DeepBurst** using synthetic inputs. The script (i) generates random histone-mark signals, (ii) performs a forward pass, (iii) converts logits to probabilities, and (iv) extracts per-target predictions.
+
+Import required packages and load the configuration:
 
 ```
-# ==========================================
-# DeepBurst Random Prediction Demo (with Mask)
-# ==========================================
-
 import torch
-
 from sklearn import metrics
+
 from src.utils.constants import DEVICE
 from src.model.constants import get_config
+
 config_path = "configs/default.yaml"
 config = get_config(config_path)
+```
+
+Create synthetic histone-mark inputs:
+
+```
 # -----------------------------
 # 1. Random Input Data
 # -----------------------------
 batch_size = 64
 seq_len = 80
-n_feats = 7
+n_feats = 7  # number of histone marks / features
 
-# Simulated promoter feature tensor and attention mask
 inputs = torch.randn(batch_size, 1, seq_len, n_feats).to(DEVICE)
 labels = torch.randint(0, 2, (batch_size, 2)).to(DEVICE)
-print(labels.shape)
+
+print("labels:", labels.shape)
 print(labels[:5])
-
 print("inputs:", inputs.shape)
+```
 
+Instantiate the model and load a trained checkpoint:
+
+```
 # -----------------------------
 # 2. Load DeepBurst
 # -----------------------------
-from src.model.net import  DeepBurst
+from src.model.net import DeepBurst
 
-n_feats_p = n_feats
-d_head = 128
+binsizes = [500]
+targets = ["bs_label", "bf_label"]
+
 d_emb = config["embed"]["d_model"]
 embed_kws = config["embed"]
 d_head = config["d_head"]
-binsizes = [500]
-targets = ['bs_label','bf_label']
 
 model = DeepBurst(
-    n_feats_p,
+    n_feats,
     d_emb,
     d_head,
     embed_kws=embed_kws,
@@ -115,50 +239,35 @@ model = DeepBurst(
     targets=targets,
 ).to(DEVICE)
 
-# load trained checkpoint, choose model according to cell line and the fold of  the chrom number. here is a demo
-# H1 cell line, fold 0
-eid = 'E003'
-fold = '0'
+# Example: load a checkpoint for a specific cell line and fold
+eid = "E003"
+fold = "0"
 ckpt = torch.load(f"checkpoints/{eid}.{fold}.bs_bf_para.model.pt", map_location=DEVICE)
 model.load_state_dict(ckpt["net"])
+```
 
+Run prediction and parse outputs:
+
+```
 model.eval()
-
-
-def evaluation(out:'torch.Tensor', label:'torch.Tensor'):
-    score = out.softmax(axis=1)[:, 1]
-    pred = out.argmax(axis=1)
-
-    acc = metrics.accuracy_score(label, pred) * 100
-    auc = metrics.roc_auc_score(label, score) * 100
-    return score, label, pred, acc, auc
-
-
 with torch.no_grad():
-    val_out = model(inputs)
-
+    out = model(inputs)
 
 print("\n=== Output Shapes ===")
-print("logits:", val_out.shape)
+print("logits:", out.shape)
 
-val_preds = {}
-for target, pred in zip(targets,torch.chunk(val_out, len(targets), axis=-1)):
-    val_preds[target] = pred
-
-val_labels = {}
-for target, label in zip(targets,torch.chunk(labels, len(targets), axis=-1)):
-    val_labels[target] = label   
-# -----------------------------
-# 4. Evaluation
-# -----------------------------
-    description = "Validation Results: "
-for target in targets:
-    val_score, val_label, val_pred, val_acc, val_auc = evaluation(val_preds[target],val_labels[target])
-    description += f"{target}: acc={val_acc:.4f}, auc={val_auc:.4f}; " 
-print(description)
+# Split logits into per-target blocks
+for target, target_out in zip(targets, torch.chunk(out, len(targets), dim=-1)):
+    prob_pos = target_out.softmax(dim=1)[:, 1]   # P(class=1)
+    pred = target_out.argmax(dim=1)              # predicted class (0/1)
+    print(f"{target}: prob_pos={prob_pos[:5]}, pred={pred[:5]}")
 ```
 
 
+
+### **Additional scripts**
+
+More analysis scripts (e.g., cell-type–specific vs. cell-type–agnostic inference, cross-cell-type evaluation, single-mark prediction, and in silico perturbation) are located under scripts/analysis/. All plotting scripts used in the manuscript are under scripts/figures/.
 
 # **Design**
 
