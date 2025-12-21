@@ -10,6 +10,8 @@ The TSS-centered embedding extracted from the Transformer output is passed throu
 
 Once trained, DeepBurst supports downstream analyses including genome-wide bursting-state prediction from histone profiles, identification of informative histone marks and genomic positions, and **in silico perturbation** analyses that prioritize histone-signal changes predicted to shift genes between bursting states.
 
+
+
 # **Data preprocessing**
 
 This repository provides preprocessing scripts for constructing model-ready datasets for transcriptional burst prediction. The pipeline integrates **histone modification features** with **bursting labels** (burst frequency and burst size, optionally including expression and noise), and produces standardized inputs for downstream training and evaluation.
@@ -286,37 +288,38 @@ for target, target_out in zip(targets, torch.chunk(out, len(targets), dim=-1)):
 
 More analysis scripts (e.g., cell-type–specific vs. cell-type–agnostic inference, cross-cell-type evaluation, single-mark prediction, and in silico perturbation) are located under scripts/analysis/. All plotting scripts used in the manuscript are under scripts/figures/.
 
+# **Design**
 
-
-# **Design notes (inference sanity check)**
+Because **Enformer** inference relies on **TensorFlow 2.18**, its software stack differs from **DeepBurst** (PyTorch) and typically comes with higher hardware requirements. To avoid Python dependency and environment conflicts, we maintain the Enformer inference workflow in a separate repository: [**Enformer-Inference**](https://github.com/wanghan4034/Enformer-Inference)
 
 <img src="img/design_module.png" alt="design_module" style="zoom:100%;" />
 
-This demo provides a minimal end-to-end sanity check for **DeepBurst** inference and evaluation using synthetic inputs. It is intended to validate checkpoint loading, forward pass execution, output parsing, and metric computation.
+You can clone this repository and run it in an isolated environment:
 
-1. **Synthetic batch construction**
+```
+git clone git@github.com:wanghan4034/Enformer-Inference.git
+```
 
-   The demo creates a simulated promoter-feature tensor inputs with shape (batch_size, 1, seq_len, n_feats) and corresponding binary labels with shape (batch_size, 2), where the two label columns align with the two prediction targets.
+Alternatively, the repository has been integrated into **DeepBurst** as a Git submodule under src/enformer_inference, enabling a unified project structure. When cloning DeepBurst, you can fetch submodules automatically via:
 
-2. **Model instantiation and checkpoint loading**
+```
+git clone --recurse-submodules git@github.com:wanghan4034/DeepBurst.git
+```
 
-   The DeepBurst model is instantiated using hyperparameters from configs/default.yaml. A trained checkpoint is loaded based on the selected **cell line ID (****eid****)** and **chromosome fold (****fold****)** (e.g., E003, fold 0). The model is switched to evaluation mode to ensure deterministic inference behavior.
+If you have already cloned the main repository but have not initialized submodules, run:
 
-3. **Multi-target output handling**
+```
+git submodule update --init --recursive
+<img src="img/design_module.png" alt="design_module" style="zoom:100%;" />
+```
 
-   The model outputs a single tensor of logits that concatenates predictions for multiple targets along the last dimension. The script splits this tensor into per-target logits using torch.chunk, maintaining a one-to-one mapping between:
+**Enformer-Inference** is responsible for predicting histone modification signals from DNA sequence (the histone-mark simulation module). On one hand, it can directly predict histone-mark profiles for specific cell lines from sequence (e.g., **H1 / E003**). On the other hand, we encapsulate a **random perturbation** strategy in this repository and use it as a simulator of histone-mark distributions to generate perturbed candidate profiles. For detailed usage, please refer to the README.md in the **Enformer-Inference** repository.
 
-   - targets = ["bs_label", "bf_label"]
-   - per-target predictions
-   - per-target labels
 
-4. **Evaluation metrics**
 
-   For each target, the demo computes:
+Once histone-mark signals are obtained, we use **DeepBurst** as the core of the design module to predict and validate **burst frequency** and **burst size **. In addition, you can use plot_tracks to visualize and inspect the resulting histone-mark distributions. more details in scripts
 
-   - **ROC-AUC**, using the positive-class probability from softmax
 
-Metrics are reported independently for each target to confirm that the output format and evaluation pipeline are consistent.
 
 # **System requirements**
 
