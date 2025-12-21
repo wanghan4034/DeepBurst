@@ -62,7 +62,7 @@ Pkg.add([
 
 ## **Histone modification feature generation**
 
-<img src="img/data_processing.png" alt="data_processing" style="zoom:80%;" />
+<img src="img/histone_mark_preprocessing.png" alt="histone_mark_preprocessing" style="zoom:100%;" />
 
 ### **1. Download and preprocessing**
 
