@@ -1,3 +1,4 @@
 [submodule "src/enformer_inference"]
 	path = src/enformer_inference
 	url = git@github.com:wanghan4034/Enformer-Inference.git
+	branch = master
