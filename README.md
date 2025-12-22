@@ -115,7 +115,9 @@ python src/data/data_process.py \
 
 Burst frequency and burst size are inferred from UMI counts (scRNA-seq) and then converted into binary labels.
 
-<img src="img/label_generation.png" alt="label_generation" style="zoom:100%;" />
+<div style="text-align:center;">
+  <img src="img/label_generation.png" alt="label_generation" style="zoom:80%;" />
+</div>
 
 ### **Step 1 — Infer bursting kinetics**
 
