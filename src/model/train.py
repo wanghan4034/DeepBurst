@@ -1,14 +1,10 @@
+import os
 import argparse
 import torch
 import torch.nn as nn
-import os
 import pandas as pd
-import yaml
-
 from tqdm import tqdm
-from scipy import stats
 from sklearn import metrics
-from typing import List
 from src.model.data import DeepBurstDataset
 from src.model.net import DeepBurst
 from src.utils.tools import seed_everything
