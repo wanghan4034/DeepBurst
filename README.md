@@ -1,6 +1,6 @@
-<div style="text-align:center;">
-  <img src="img/logo.png" alt="logo" style="zoom:30%;" />
-</div>
+<p align="center">
+  <img src="img/logo.png" alt="logo" width="60%" />
+</p>
 
 # **Model overview**
 
@@ -115,9 +115,9 @@ python src/data/data_process.py \
 
 Burst frequency and burst size are inferred from UMI counts (scRNA-seq) and then converted into binary labels.
 
-<div style="text-align:center;">
-  <img src="img/label_generation.png" alt="label_generation" style="zoom:80%;" />
-</div>
+<p align="center">
+  <img src="img/label_generation.png" alt="label_generation" width="80%" />
+</p>
 
 ### **Step 1 — Infer bursting kinetics**
 
