@@ -1,4 +1,5 @@
-<img src="img/logo.png" alt="logo" style="zoom:80%;" />
+<img src="img/logo.png" alt="logo" style="zoom:80%; display:block; margin:0 auto;" />
+
 # **Model overview**
 
 DeepBurst is a Transformer-based framework for predicting genome-wide transcriptional bursting kinetics from promoter-proximal histone modification profiles. The model is designed to quantify how chromatin states shape bursting behavior by jointly modeling **burst frequency** and **burst size**.
