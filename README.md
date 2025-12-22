@@ -1,4 +1,6 @@
-<img src="img/logo.png" alt="logo" style="zoom:40%; display:block; margin:0 auto;" />
+<div style="text-align:center;">
+  <img src="img/logo.png" alt="logo" style="zoom:30%;" />
+</div>
 
 # **Model overview**
 
