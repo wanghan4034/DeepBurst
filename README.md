@@ -1,4 +1,4 @@
-<img src="img/logo.png" alt="logo" style="zoom:80%; display:block; margin:0 auto;" />
+<img src="img/logo.png" alt="logo" style="zoom:40%; display:block; margin:0 auto;" />
 
 # **Model overview**
 
