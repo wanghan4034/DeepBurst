@@ -2,142 +2,178 @@
   <img src="img/logo.png" alt="logo" width="60%" />
 </p>
 
-# **Model overview**
+# **Project at a glance**
 
-DeepBurst is a Transformer-based framework for predicting genome-wide transcriptional bursting kinetics from promoter-proximal histone modification profiles. The model is designed to quantify how chromatin states shape bursting behavior by jointly modeling **burst frequency** and **burst size**.
+DeepBurst is a Transformer-based framework for predicting transcriptional bursting kinetics from promoter-centred histone modification profiles. Given a TSS-centred 40 kb window (80 bins at 500 bp) and seven ChIP–seq tracks (H3K9ac, H3K27ac, H3K4me3, H3K4me1, H3K36me3, H3K27me3, H3K9me3), DeepBurst learns position-aware chromatin representations and jointly classifies **burst frequency (BF)** and **burst size (BS)** into high/low regimes.
 
-For each gene, the local regulatory context is represented by a **40 kb window** centered on the transcription start site (TSS). ChIP–seq coverage tracks for seven canonical histone modifications spanning activating and repressive chromatin states (**H3K9ac, H3K27ac, H3K4me3, H3K4me1, H3K36me3, H3K27me3, H3K9me3**) are aggregated into **80 bins of 500 bp**. A Transformer encoder learns dependencies across genomic positions and across histone marks, producing a position-resolved regulatory embedding.
+**Key facts**
 
-Supervisory labels are derived by inferring gene-specific bursting parameters from matched single-cell RNA-seq data using stochastic transcription models, and aligning these estimates with histone profiles from the same cell line. Because capture efficiency, cell type, and inference pipelines can introduce systematic shifts in continuous kinetic estimates, DeepBurst is trained as a **binary classification** model rather than a regression model. Within each cell line, genes are labeled as **high/low burst frequency** and **high/low burst size** using **median-based thresholds**, yielding robust training targets.
+- **Genome build:** hg19
+- **Input:** 40 kb TSS-centred window, binned at 500 bp (80 bins) across 7 histone marks
+- **Output:** per-gene predicted probabilities for **high BF** and **high BS**
+- **Labels:** bursting parameters inferred from matched scRNA-seq and binarized by **within–cell line median thresholds**
+- **Evaluation:** **cell-type-specific** training with **4-fold chromosome-split cross-validation**
 
-The TSS-centered embedding extracted from the Transformer output is passed through fully connected layers and two parallel binary classifiers to predict burst frequency and burst size labels. Model training and evaluation are performed **separately per cell type** using **4-fold chromosome-split cross-validation** to reduce the risk of information leakage between training and validation sets.
 
-Once trained, DeepBurst supports downstream analyses including genome-wide bursting-state prediction from histone profiles, identification of informative histone marks and genomic positions, and **in silico perturbation** analyses that prioritize histone-signal changes predicted to shift genes between bursting states.
 
-This repository contains all experimental results reported in the paper, including data preprocessing, model training, model inference, interpretability analyses, and the design module. To reproduce the results from scratch, first clone the repository:
+**Downstream uses**
 
-```bash
-git clone git@github.com:wanghan4034/DeepBurst.git
+
+
+- Genome-wide bursting-state prediction from histone profiles
+- Attribution-based interpretation of informative marks and genomic positions
+- Model-constrained *in silico* perturbation analyses to prioritize epigenomic changes predicted to shift bursting regimes
+
+# Quickstart
+
+## **Installation**
+
+Clone the repository:
+
+```
+git clone https://github.com/wanghan4034/DeepBurst.git
+cd DeepBurst
 ```
 
-# **Data preprocessing**
+Create an environment and install dependencies:
 
-This repository provides preprocessing scripts for constructing model-ready datasets for transcriptional burst prediction. The pipeline integrates **histone modification features** with **bursting labels** (burst frequency and burst size, optionally including expression and noise), and produces standardized inputs for downstream training and evaluation.
+```
+conda create -n deepburst python=3.10
+conda activate deepburst
+pip install -r requirements.txt
+```
 
-Cell lines are indexed using Roadmap Epigenomics **EID** identifiers defined in the **Roadmap 2015** reference epigenome compendium. In this repository, **E003** corresponds to **H1**, **E118** corresponds to **HepG2**, and **E116** corresponds to **GM12878**.
+For GPU support, install PyTorch following the official instructions and ensure CUDA is compatible with your system.
+
+
+
+## **Option A: Inference with a pretrained checkpoint (recommended)**
+
+1. Download the processed dataset and pretrained checkpoints from **GitHub Releases**:
+
+- Releases page: https://github.com/wanghan4034/DeepBurst/releases
+- Assets to download (example names; adjust to your release assets):
+  - deepburst_processed_data_v1.zip
+  - deepburst_checkpoints_v1.zip
+
+> Note: A Zenodo archive (with DOI) will be added in a future release. For now, please use GitHub Releases.
+
+1. Unzip and run inference:
+
+```
+python scripts/demo_infer.py \
+  --eid E003 \
+  --ckpt checkpoints/E003.0.bs_bf_para.model.pt \
+  --data extra/datasets/processed/v1
+```
+
+
+
+## **Option B: Train from processed data**
+
+```
+python train.py \
+  --config configs/default.yaml \
+  --meta extra/datasets/processed/v1/meta_datasets/meta_data_E003.csv \
+  --npy-dir extra/datasets/processed/v1 \
+  --fold 0 \
+  -o checkpoints/E003.0.bs_bf_para.model.pt
+```
+
+
+
+# **Repository layout**
+
+- src/ core model and utilities
+- scripts/ demo, analysis, and figure-generation scripts
+- configs/ YAML configs for training/inference
+- checkpoints/ pretrained models (download from Releases)
+- extra/datasets/ processed data, gene annotations, and resources (download from Releases)
+
+# **Full pipeline**
+
+## **Data preprocessing**
+
+This repository provides preprocessing scripts for constructing model-ready datasets by integrating:
+
+- **Histone modification features** (Roadmap TagAlign / coverage tracks)
+- **Bursting labels** (BF and BS derived from scRNA-seq kinetic inference)
+
+Cell lines are indexed using Roadmap Epigenomics **EID** identifiers:
+
+- **E003**: H1
+- **E118**: HepG2
+- **E116**: GM12878
 
 
 
 ## **Dependencies**
 
-### **For histone feature extraction and burst-label preprocessing (Python)**
+### **Python (feature generation, training, and analysis)**
 
-Python **3.10** is required. All dependencies are listed in requirements.txt and can be installed with:
+- Python 3.10
+- Dependencies in requirements.txt
 
-```
-pip install -r requirements.txt
-```
+### **Command-line tools (histone preprocessing)**
 
-
-
-### **For DeepTX-based kinetic inference (Julia)**
-
-- Julia ≥ 1.7.3
-- Required Julia packages:
+- bedtools 2.31.1
+- sambamba 1.0.1
 
 
 
-```
-Pkg.add([
-  "Flux",
-  "CSV",
-  "DataFrames",
-  "JLD2",
-  "Distributions",
-  "StatsBase",
-  "SpecialFunctions",
-  "ZygoteRules",
-  "Catalyst",
-  "BlackBoxOptim",
-  "Sobol",
-  "Distances",
-  "OptimalTransport",
-  "ProgressMeter",
-  "MAT",
-  "Interp1d"
-])
-```
+### **Julia (optional; DeepTX-based kinetic inference)**
 
-
+If you use the DeepTX label-generation path, install Julia ≥ 1.7.3 and required packages (see src/data_preprocessing/label_generation/).
 
 ## **Histone modification feature generation**
 
 <img src="img/histone_mark_preprocessing.png" alt="histone_mark_preprocessing" style="zoom:80%;" />
 
-### **1. Download and preprocessing**
+### **Step 1 — Download and preprocessing**
 
-We downloaded the raw **TagAlign** files from  [Roadmap Epigenomics Web Portal](https://egg2.wustl.edu/roadmap/web_portal/). We then used **bedtools** to convert TagAlign to **BAM**, and used **sambamba** to sort and index the BAM files. Next, we ran **bedtools genomecov** to compute base-level genome-wide coverage in the **hg19** reference coordinate system, and exported the results as **bigWig** files for downstream feature construction.
-
-This workflow is encapsulated in src/data_preprocessing/Snakefile and can be executed with:
+We download Roadmap **TagAlign** files and convert them to BAM using **bedtools** (bedtools 2.31.1), providing the UCSC hg19 chromosome size file to ensure consistency of chromosome names and lengths; TagAlign files are treated as single-end alignments. BAM files are sorted and indexed with **sambamba** (1.0.1). We then compute genome-wide, base-resolution coverage in **hg19** using bedtools genomecov, and transform coverage using the same log transform used for model inputs (base *e*) prior to downstream binning.This workflow is encapsulated in src/data_preprocessing/Snakefile and can be executed with:
 
 ```
 snakemake -s src/data_preprocessing/Snakefile -j 8
 ```
 
+### **Step 2 — Per-gene feature extraction**
 
-
-### **2. Histone modification feature extraction**
-
-The example below demonstrates the workflow for the **H1 (E003)** cell line. Histone modification signals are extracted from epigenomic tracks and aggregated into per-gene feature matrices.
-
-**Command (H1 / E003):**
+Example for **H1 (E003)**:
 
 ```
 python src/data/data_process.py \
   --eid E003 \
   --gene extra/datasets/genomic/hg19/genes.bed \
   --epi_dir extra/datasets/epigenetic/hg19 \
-  -o extra/datasets/processed/v2
+  -o extra/datasets/processed/v1
 ```
 
-**Arguments**
 
-- --eid: Experiment / cell line ID (e.g., E003 for H1)
-- --gene: Gene annotation file in BED format
-- --epi_dir: Directory containing histone modification tracks
-- -o: Output directory
-
-**Outputs**
-
-- Per-gene histone feature matrices (e.g., .csv / .npy, depending on configuration)
 
 ## **Burst label generation**
 
-Burst frequency and burst size are inferred from UMI counts (scRNA-seq) and then converted into binary labels.
+Burst frequency and burst size are inferred from scRNA-seq UMI counts and then converted into binary labels.
 
 <p align="center">
   <img src="img/label_generation.png" alt="label_generation" width="80%" />
 </p>
 
-### **Step 1 — Infer bursting kinetics**
+### **Step 1 — Infer bursting kinetics (choose one)**
 
 **txburst**
 
-```
+```bash
 python src/data_preprocessing/label_generation/txburst/txburst_infer.py --cell_type H1
 ```
 
-- Output: **continuous** bursting parameters in .csv
+**DeepTX (Julia)**
 
-**DeepTX**
-
-```
+```bash
 julia TX_inferrer.jl data/H1_scRNA.csv inferred_results.csv
 ```
 
-- Output: **continuous** bursting parameters in .csv
-
-### **Step 2 — Convert kinetics into burst labels**
+### **Step 2 — Convert kinetics into BF/BS labels**
 
 ```
 python src/data/burst/data_convert.py \
@@ -146,210 +182,160 @@ python src/data/burst/data_convert.py \
   -o extra/datasets/processed/v1/meta_datasets
 ```
 
-**Outputs**
-
-- Per-gene binary burst labels and related quantities (e.g., BF/BS labels; optional expression/noise labels) saved as meta_data_*.csv
-
-
-
-## **Final outputs**
-
-After preprocessing, the pipeline produces:
-
-- **Histone modification features**: per-gene profiles across histone marks
-- **Burst labels**: per-gene BF/BS labels (optionally expression/noise labels)
-
 
 
 # **Model training and prediction**
 
-This repository provides a training pipeline for predicting transcriptional burst dynamics from histone modification features and burst-related labels.
-
-## **Dependencies**
-
-All dependencies are listed in requirements.txt. Install them with:
-
-```
-pip install -r requirements.txt
-```
+## **Training (4-fold chromosome-split cross-validation )**
 
 
 
-## **Training and prediction**
-
-### **Training demo**
-
-Example: training on three Roadmap cell lines (**E003, E116, E118**) with 4-fold cross-validation:
+Example loop for **E003, E116, E118**:
 
 ```
-for eid in E003 E116 E118
-do
-    for fold in 0 1 2 3
-    do
-        echo "experiment $eid $fold"
-        python train.py \
-            --config configs/default.yaml \
-            --meta extra/datasets/processed/v1/meta_datasets/meta_data_${eid}.csv \
-            --npy-dir extra/datasets/processed/v1 \
-            --fold $fold \
-            -o checkpoints/${eid}.${fold}.bs_bf_para.model.pt \
-            --exp-id 2 \
-            --binsizes 500 \
-            > logs/${eid}.${fold}.bs_bf_para.train.log 2>&1
-    done
-done
+eid=E003
+fold=0
+python train.py \
+  --config configs/default.yaml \
+  --meta extra/datasets/processed/v1/meta_datasets/meta_data_${eid}.csv \
+  --npy-dir extra/datasets/processed/v1 \
+  --fold $fold \
+  -o checkpoints/${eid}.${fold}.bs_bf_para.model.pt 
 ```
 
-
-
-### **Prediction demo (random inputs)**
-
-Below is a minimal, end-to-end example showing how to run inference with **DeepBurst** using synthetic inputs. The script (i) generates random histone-mark signals, (ii) performs a forward pass, (iii) converts logits to probabilities, and (iv) extracts per-target predictions.
-
-**Import required packages and load the configuration:**
+## **Minimal inference example (synthetic inputs)**
 
 ```
 import torch
-from sklearn import metrics
-
 from src.utils.constants import DEVICE
 from src.model.constants import get_config
+from src.model.net import DeepBurst
 
-config_path = "configs/default.yaml"
-config = get_config(config_path)
-```
+config = get_config("configs/default.yaml")
 
-**Create synthetic histone-mark inputs:**
-
-```
-# -----------------------------
-# 1. Random Input Data
-# -----------------------------
 batch_size = 64
 seq_len = 80
-n_feats = 7  # number of histone marks / features
+n_feats = 7
 
 inputs = torch.randn(batch_size, 1, seq_len, n_feats).to(DEVICE)
-labels = torch.randint(0, 2, (batch_size, 2)).to(DEVICE)
-
-print("labels:", labels.shape)
-print(labels[:5])
-print("inputs:", inputs.shape)
-```
-
-**Instantiate the model and load a trained checkpoint:**
-
-```
-# -----------------------------
-# 2. Load DeepBurst
-# -----------------------------
-from src.model.net import DeepBurst
 
 binsizes = [500]
 targets = ["bs_label", "bf_label"]
-
 d_emb = config["embed"]["d_model"]
 embed_kws = config["embed"]
 d_head = config["d_head"]
 
 model = DeepBurst(
-    n_feats,
-    d_emb,
-    d_head,
+    n_feats, d_emb, d_head,
     embed_kws=embed_kws,
     binsizes=binsizes,
     seed=42,
     targets=targets,
 ).to(DEVICE)
 
-# Example: load a checkpoint for a specific cell line and fold
-eid = "E003"
-fold = "0"
+eid, fold = "E003", "0"
 ckpt = torch.load(f"checkpoints/{eid}.{fold}.bs_bf_para.model.pt", map_location=DEVICE)
 model.load_state_dict(ckpt["net"])
-```
-
-**Run prediction and parse outputs:**
-
-```
 model.eval()
+
 with torch.no_grad():
-    out = model(inputs)
+    logits = model(inputs)
 
-print("\n=== Output Shapes ===")
-print("logits:", out.shape)
-
-# Split logits into per-target blocks
-for target, target_out in zip(targets, torch.chunk(out, len(targets), dim=-1)):
-    prob_pos = target_out.softmax(dim=1)[:, 1]   # P(class=1)
-    pred = target_out.argmax(dim=1)              # predicted class (0/1)
-    print(f"{target}: prob_pos={prob_pos[:5]}, pred={pred[:5]}")
+# logits is concatenated across targets; per-target block is 2-class logits
+for target, target_out in zip(targets, torch.chunk(logits, len(targets), dim=-1)):
+    prob_high = target_out.softmax(dim=1)[:, 1]  # P(class=1), i.e., high BF/BS
+    pred = target_out.argmax(dim=1)
+    print(target, prob_high[:5], pred[:5])
 ```
 
+More scripts for analysis and figure generation are under:
 
+- scripts/analysis/
+- scripts/figures/
 
-### **Additional scripts**
+# **Design bursting kinetics for target genes (Enformer-based)**
 
-More analysis scripts (e.g., cell-type–specific vs. cell-type–agnostic inference, cross-cell-type evaluation, single-mark prediction, and in silico perturbation) are located under scripts/analysis/. All plotting scripts used in the manuscript are under scripts/figures/.
+<p align="center">
+  <img src="img/design_module.png" alt="design_module" width="100%" />
+</p>
 
-# **Design bursting kinetics for target genes**
+Because Enformer inference relies on **TensorFlow 2.18**, its software stack differs from DeepBurst (PyTorch). We maintain the Enformer workflow in a separate repository:
 
-Because **Enformer** inference relies on **TensorFlow 2.18**, its software stack differs from **DeepBurst** (PyTorch) and typically comes with higher hardware requirements. To avoid Python dependency and environment conflicts, we maintain the Enformer inference workflow in a separate repository: [**Enformer-Inference**](https://github.com/wanghan4034/Enformer-Inference)
+- https://github.com/wanghan4034/Enformer-Inference
 
-<img src="img/design_module.png" alt="design_module" style="zoom:100%;" />
-
-You can clone this repository and run it in an isolated environment:
-
-```
-git clone git@github.com:wanghan4034/Enformer-Inference.git
-```
-
-Alternatively, the repository has been integrated into **DeepBurst** as a Git submodule under src/enformer_inference, enabling a unified project structure. When cloning DeepBurst, you can fetch submodules automatically via:
+The repository is also included as a git submodule under src/enformer_inference. To clone with submodules:
 
 ```
-git clone --recurse-submodules git@github.com:wanghan4034/DeepBurst.git
+git clone --recurse-submodules https://github.com/wanghan4034/DeepBurst.git
 ```
 
-If you have already cloned the main repository but have not initialized submodules, run:
+# **Model/data downloads**
 
-```
-git submodule update --init --recursive
-```
+Pretrained checkpoints and processed datasets are provided via **GitHub Releases**:
 
-**Enformer-Inference** is responsible for predicting histone modification signals from DNA sequence (the histone-mark simulation module). On one hand, it can directly predict histone-mark profiles for specific cell lines from sequence (e.g., **H1 / E003**). On the other hand, we encapsulate a **random perturbation** strategy in this repository and use it as a simulator of histone-mark distributions to generate perturbed candidate profiles. For detailed usage, please refer to the README.md in the **Enformer-Inference** repository.
-
-Once histone-mark signals are obtained, **DeepBurst** serves as the core of the design module to predict and validate **burst frequency** and **burst size**. In addition, the plot_tracks utility can be used to visualize and inspect the resulting histone-mark distributions. Further details and analysis workflows are provided in [scripts/analysis/](https://github.com/wanghan4034/DeepBurst/tree/master/scripts/analysis) and [**Enformer-Inference**](https://github.com/wanghan4034/Enformer-Inference).
+- https://github.com/wanghan4034/DeepBurst/releases
 
 
+
+A Zenodo archive with DOI will be added in a future release; once available, we will mirror the same assets there for long-term archival.
 
 # **System requirements**
 
 ## **Training DeepBurst**
 
-DeepBurst is trained on a server equipped with **28 Intel(R) Xeon(R) Gold 6132 CPUs @ 2.60GHz**, **60 GB RAM**, and **one NVIDIA V100 GPU (16 GB VRAM)**. With sufficient GPU memory, training is also feasible on modern consumer GPUs (e.g., **RTX 4090**).
+Tested on:
 
-### **Hardware**
-
-- **CPU:** ≥ 6 cores, ≥ 2.40 GHz
-- **GPU:** ≥ 16 GB VRAM
-- **RAM:** ≥ 16 GB
-
-### **Software**
-
-- **OS:** Ubuntu 22.04 (tested)
-- **Python:** 3.10.14
-- **PyTorch:** 1.13.0 (CUDA 11.2)
-- Other key Python packages are listed in requirements.txt
-
-### **Command-line tools (for preprocessing)**
-
-- sambamba 1.0.1
-- bedtools 2.31.1
+- CPU: 28 × Intel Xeon Gold 6132 @ 2.60GHz
+- RAM: 60 GB
+- GPU: NVIDIA V100 (16 GB)
 
 
 
+**Recommended minimum**
+
+- CPU: ≥ 6 cores
+- RAM: ≥ 16 GB
+- GPU: ≥ 16 GB VRAM (recommended for training)
 
 
-## **Design stage (Enformer-based inference)**
 
-During the design and analysis stage, we run **Enformer** to generate sequence-based predictions using DeepMind’s official TensorFlow implementation and the official pre-trained checkpoints. Inference is performed on an **NVIDIA A800 GPU (80 GB VRAM)**. Once histone modification features are prepared, running **DeepBurst** inference uses the same hardware and software configuration described above.
+**Software**
+
+- OS: Ubuntu 22.04 (tested)
+- Python: 3.10
+- PyTorch: see requirements.txt (install with appropriate CUDA)
+- bedtools: 2.31.1
+- sambamba: 1.0.1
+
+
+
+## **Design stage (Enformer)**
+
+Enformer-based inference is typically run on a high-memory GPU (e.g., A800 80 GB VRAM). Once histone features are generated, DeepBurst inference follows the same requirements as above.
+
+
+
+# **Citation**
+
+
+
+
+
+If you use DeepBurst in your work, please cite the accompanying manuscript:
+
+```
+@misc{DeepBurst,
+  title   = {DeepBurst: Predicting transcriptional bursting kinetics from histone modification profiles},
+  author  = {Wang, Han and others},
+  year    = {2025},
+  note    = {Manuscript in preparation}
+}
+```
+
+
+
+------
+
+
+
+如果你把 **GitHub Releases** 里最终要发布的两个压缩包名字（数据包、checkpoint 包）和解压后的目录结构（extra/datasets/... 和 checkpoints/... 里面具体有哪些文件）贴给我，我可以把 Quickstart 的下载与路径写得完全“零猜测”，保证用户第一次按 README 运行不会踩目录坑。
