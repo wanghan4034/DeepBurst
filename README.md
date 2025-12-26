@@ -190,7 +190,7 @@ python src/data/burst/data_convert.py \
 
 
 
-Example loop for **E003, E116, E118**:
+Example loop for **E003,  fold 0**:
 
 ```
 eid=E003
@@ -201,51 +201,6 @@ python train.py \
   --npy-dir extra/datasets/processed/v1 \
   --fold $fold \
   -o checkpoints/${eid}.${fold}.bs_bf_para.model.pt 
-```
-
-## **Minimal inference example (synthetic inputs)**
-
-```
-import torch
-from src.utils.constants import DEVICE
-from src.model.constants import get_config
-from src.model.net import DeepBurst
-
-config = get_config("configs/default.yaml")
-
-batch_size = 64
-seq_len = 80
-n_feats = 7
-
-inputs = torch.randn(batch_size, 1, seq_len, n_feats).to(DEVICE)
-
-binsizes = [500]
-targets = ["bs_label", "bf_label"]
-d_emb = config["embed"]["d_model"]
-embed_kws = config["embed"]
-d_head = config["d_head"]
-
-model = DeepBurst(
-    n_feats, d_emb, d_head,
-    embed_kws=embed_kws,
-    binsizes=binsizes,
-    seed=42,
-    targets=targets,
-).to(DEVICE)
-
-eid, fold = "E003", "0"
-ckpt = torch.load(f"checkpoints/{eid}.{fold}.bs_bf_para.model.pt", map_location=DEVICE)
-model.load_state_dict(ckpt["net"])
-model.eval()
-
-with torch.no_grad():
-    logits = model(inputs)
-
-# logits is concatenated across targets; per-target block is 2-class logits
-for target, target_out in zip(targets, torch.chunk(logits, len(targets), dim=-1)):
-    prob_high = target_out.softmax(dim=1)[:, 1]  # P(class=1), i.e., high BF/BS
-    pred = target_out.argmax(dim=1)
-    print(target, prob_high[:5], pred[:5])
 ```
 
 More scripts for analysis and figure generation are under:
