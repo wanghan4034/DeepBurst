@@ -313,13 +313,7 @@ Tested on:
 
 Enformer-based inference is typically run on a high-memory GPU (e.g., A800 80 GB VRAM). Once histone features are generated, DeepBurst inference follows the same requirements as above.
 
-
-
-# **Citation**
-
-
-
-
+# **Citation**s
 
 If you use DeepBurst in your work, please cite the accompanying manuscript:
 
@@ -331,11 +325,3 @@ If you use DeepBurst in your work, please cite the accompanying manuscript:
   note    = {Manuscript in preparation}
 }
 ```
-
-
-
-------
-
-
-
-如果你把 **GitHub Releases** 里最终要发布的两个压缩包名字（数据包、checkpoint 包）和解压后的目录结构（extra/datasets/... 和 checkpoints/... 里面具体有哪些文件）贴给我，我可以把 Quickstart 的下载与路径写得完全“零猜测”，保证用户第一次按 README 运行不会踩目录坑。
