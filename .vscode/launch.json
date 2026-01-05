@@ -37,6 +37,15 @@
       "console": "integratedTerminal",
       "cwd": "${workspaceFolder}",
       "justMyCode": false
+    },
+    {
+      "name": "txburst_infer",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/data_preprocessing/label_generation/txburst/txburst_infer.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "justMyCode": false
     }
   ]
 }

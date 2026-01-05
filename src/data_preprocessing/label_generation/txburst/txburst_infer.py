@@ -53,12 +53,13 @@ def calculate_stats(data:pd.DataFrame):
     """
     Calculate the mean, variance, and coefficient of variation (CV) for the given data, and summarize the results into a dataframe.
     """
+    data_ = data.copy()
 
-    columns = data.columns
-    data[EXPRESSION] = data[columns].apply(lambda row:np.mean(row), axis=1)
-    data[VARIANCE] = data[columns].apply(lambda row:np.var(row), axis=1)
-    data[CV] = data[columns].apply(lambda row:np.std(row)/np.mean(row), axis=1)
-    return data[[EXPRESSION, VARIANCE, CV]]
+    columns = data_.columns
+    data_[EXPRESSION] = data_[columns].apply(lambda row:np.mean(row), axis=1)
+    data_[VARIANCE] = data_[columns].apply(lambda row:np.var(row), axis=1)
+    data_[CV] = data_[columns].apply(lambda row:np.std(row)/np.mean(row), axis=1)
+    return data_[[EXPRESSION, VARIANCE, CV]]
 
 
 def load_gene_name_code(data_dir, genes_type="features", gene_columns=["gene_id", "gene_name"]):
@@ -125,9 +126,17 @@ def read_data(root_data_path, cell_type):
     return data_df.T
 
 
+def compute_cell_size_ratio(data: pd.DataFrame):
+    T = data.sum(axis=0)          # T_j, 对每个细胞列求和
+    T_bar = T.mean()            # \bar T
+    cell_size_ratio = T / T_bar        
+    cell_size_ratio = np.clip(cell_size_ratio, 0.01, 10)   # T_j / \bar T
+    return cell_size_ratio.values
+
 def infer_kinetics(data: pd.DataFrame):
     print('Inferring kinetics:')
-    params = Parallel(n_jobs=NJOBS, verbose = 3)(delayed(MaximumLikelihood)(np.around(rpkm[pd.notnull(rpkm)]),'L-BFGS-B',DELAY) for _,rpkm in tqdm(data.iterrows(),total=len(data)))
+    cell_size_ratio = compute_cell_size_ratio(data)
+    params = Parallel(n_jobs=NJOBS, verbose = 3)(delayed(MaximumLikelihood)(np.around(rpkm[pd.notnull(rpkm)]),'L-BFGS-B',DELAY, cell_size_ratio) for _,rpkm in tqdm(data.iterrows(),total=len(data)))
     keep = whichKeep(params)
 
     print('Inferred kinetics of {} genes out of {} total'.format(np.sum(keep), len(keep)))   
@@ -154,7 +163,7 @@ def main(cell_type, data_dir, saved_dir):
     merge_stats['gene_name'] = merge_stats.index
     gene_name_code = load_gene_name_code(os.path.join(data_dir,cell_type))
     merged_data = pd.merge(merge_stats, gene_name_code, on="gene_name", how='inner')
-    merged_data.fillna(0.0).to_csv(os.path.join(saved_dir,f'{cell_type}_statistic_gene_transcript_region.csv'), index = False)
+    merged_data.fillna(0.0).to_csv(os.path.join(saved_dir,f'{cell_type}_statistic_gene_transcript_region_with_cell_size.csv'), index = False)
 
 
 if __name__ == '__main__':
@@ -169,5 +178,5 @@ if __name__ == '__main__':
 
     cell_type = args.cell_type
     data_dir = args.data_dir
-    saved_dir = args.output
+    saved_dir = args.output 
     main(cell_type,data_dir,saved_dir)

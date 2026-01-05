@@ -20,7 +20,7 @@ def whichKeep(est_params):
     return which
 
 
-def MaximumLikelihood(vals, metod = 'L-BFGS-B',delay=1):
+def MaximumLikelihood(vals, metod = 'L-BFGS-B',delay=1, cell_size_ratio = 1):
     from scipy.interpolate import interp1d
     from scipy.optimize import minimize
     from scipy import special
@@ -53,6 +53,7 @@ def MaximumLikelihood(vals, metod = 'L-BFGS-B',delay=1):
         x0 = np.array([10,10,10])
     bnds = ((1e-3,1e3),(1e-3,1e3), (1, 1e4))
     vals_ = np.copy(vals) # Otherwise the structure is violated.
+    vals_ = vals_ / cell_size_ratio
     try:
         ll = minimize(LogLikelihood, x0, args = (vals_,delay), method=metod, bounds=bnds)
     except:
