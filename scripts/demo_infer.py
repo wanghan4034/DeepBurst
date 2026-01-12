@@ -117,17 +117,14 @@ def main():
     meta = meta.loc[split_id.notna()].copy()
     split_id = split_id.loc[meta.index].astype(int)
 
-    qs = [meta.loc[split_id == k, "gene_id"].tolist() for k in [1, 2, 3, 4]]
 
-    fold = int(args.fold)
-    train_genes = qs[(fold + 0) % 4] + qs[(fold + 1) % 4] + qs[(fold + 2) % 4]
-    val_genes = qs[(fold + 3) % 4]
+    val_genes = list(meta['gene_id'])
 
-    print(f"eid={args.eid}, fold={fold}")
+    print(f"eid={args.eid}, fold={args.fold}")
     print(f"ckpt={args.ckpt}")
     print(f"meta={meta_path}")
     print(f"npy_dir={args.npy_dir}")
-    print(f"train={len(train_genes)}, val={len(val_genes)}, n_feats_p={n_feats_p}")
+    print(f"val={len(val_genes)}, n_feats_p={n_feats_p}")
 
     # ----- Dataset / Loader -----
     val_dataset = DeepBurstDataset(
@@ -176,9 +173,7 @@ def main():
                     d[k] = v.to(DEVICE)
 
             out = model(
-                d["promoter_feats"][500],
-                d["promoter_pad_masks"][500],
-            )
+                d["promoter_feats"][500],            )
             val_out.append(out.cpu())
             val_label.append(d["label"].cpu())
 
@@ -192,7 +187,7 @@ def main():
     records = {
         "gene_id": gene_ids,
         "eid": args.eid,
-        "fold": fold,
+        "fold": args.fold,
         "ckpt": args.ckpt,
         "meta": meta_path,
         "npy_dir": args.npy_dir,

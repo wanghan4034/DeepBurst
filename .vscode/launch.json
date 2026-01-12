@@ -55,6 +55,29 @@
         "--with_cell_size",
       ],
       "justMyCode": false
+    },
+    {
+      "name": "demo_infer",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/demo_infer.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "args": [
+        "--eid",
+        "E003",
+        "--ckpt",
+        "checkpoints/E003.0.bs_bf_para.model.pt",
+        "--meta",
+        "extra/datasets/processed/E003_samples/meta_data_E003_samples.csv",
+        "--npy_dir",
+        "extra/datasets/processed/E003_samples",
+        "--fold",
+        "0",
+        "--out",
+        "extra/results/E003.fold0.infer.csv"
+      ],
+      "justMyCode": false
     }
   ]
 }
