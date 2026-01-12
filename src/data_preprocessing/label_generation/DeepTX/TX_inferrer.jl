@@ -30,4 +30,4 @@ estimated = DeepTX_inferrer(gene_exp)
 # 3️ Save inference results
 # ========================
 CSV.write(joinpath(RESULT_DIR, result_file_name), estimated)
-println("✅ Inference finished! Results saved to: ", joinpath(RESULT_DIR, result_file_name))
+println("Inference finished! Results saved to: ", joinpath(RESULT_DIR, result_file_name))

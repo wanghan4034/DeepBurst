@@ -7,8 +7,8 @@ import pandas as pd
 import pickle
 import gtfparse
 from typing import List, Dict,Union, Iterator
-from src.data.features.constants import GENOMIC_FASTA_PATH
-from src.data.features.basic import GenomicSite,  GenomicSlice, CREsInfo, GeneInfo, TranscriptInfo, TranscriptStartSite, FragData
+from src.data_preprocessing.histone_marks.constants import GENOMIC_FASTA_PATH
+from src.data_preprocessing.histone_marks.basic import GenomicSite,  GenomicSlice, CREsInfo, GeneInfo, TranscriptInfo, TranscriptStartSite, FragData
 from src.utils.logs import get_logger
 logger = get_logger()
 

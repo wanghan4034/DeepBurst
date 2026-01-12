@@ -16,7 +16,7 @@ sc.settings.set_figure_params(
 )
 
 
-def sc_preprocess(data: AnnData, outlier_threshold = 3):
+def sc_preprocess(data: AnnData, outlier_threshold = 3, plot: bool = False) -> AnnData:
     adata = deepcopy(data)
     # mitochondrial genes
     adata.var["mt"] = adata.var_names.str.startswith("MT-")

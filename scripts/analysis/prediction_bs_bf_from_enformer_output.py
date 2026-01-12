@@ -57,7 +57,7 @@ embed_kws = config["embed"]
 regulation_kws = config["regulation"]
 d_head = config["d_head"]
 targets = ['bs_label','bf_label']
-npy_dir = "extra/datasets/processed/v1/E003_enformer"
+npy_dir = "extra/datasets/processed/v2/E003_enformer/regions"
 
 
 
@@ -69,7 +69,7 @@ for eid in ["E003"]:
         print(f"eid:{eid},fold:{fold}")
         checkpoints = f"checkpoints/{eid}.{fold}.bs_bf_para.model.pt"
 
-        meta_path = f"extra/datasets/processed/v1/meta_datasets/meta_data_{eid}.csv"
+        meta_path = f"extra/datasets/processed/v2/meta_datasets/meta_data_{eid}_delay_1.0_with_cellsize_1.csv"
 
         #
         # Setup end.

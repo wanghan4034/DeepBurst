@@ -20,45 +20,67 @@ def whichKeep(est_params):
     return which
 
 
-def MaximumLikelihood(vals, metod = 'L-BFGS-B',delay=1, cell_size_ratio = 1):
-    from scipy.interpolate import interp1d
+def MaximumLikelihood(vals, metod = 'L-BFGS-B',capture_efficency=1, cell_size_ratio = 1):
     from scipy.optimize import minimize
-    from scipy import special
     from scipy.stats import poisson,norm
     from scipy.special import j_roots
     from scipy.special import beta as beta_fun
     import numpy as np
     if len(vals) == 0:
         return np.array([np.nan, np.nan, np.nan])
-    def dBP(at, alpha, bet, lam):
-        at.shape = (len(at), 1)
-        np.repeat(at, 50, axis = 1)
+    # def dBP(at, alpha, bet, lam,capture_efficency=1, cell_size_ratio=1):
+    #     at.shape = (len(at), 1)
+    #     np.repeat(at, 50, axis = 1)
+    #     def fun(at, m):
+    #         if(max(m) < 1e6):
+    #             return(poisson.pmf(at,m))
+    #         else:
+    #             return(norm.pdf(at,loc=m,scale=np.sqrt(m)))
+        
+    #     x,w = j_roots(50,alpha = bet - 1, beta = alpha - 1)
+    #     gs = np.sum(w*fun(at, m = cell_size_ratio*capture_efficency*lam*(1+x)/2), axis=1)
+    #     prob = 1/beta_fun(alpha, bet)*2**(-alpha-bet+1)*gs
+    #     return(prob)
+
+    def dBP(at, alpha, bet, lam, capture_efficency, cell_size_ratio=1):
+        at = np.asarray(at)
+        if np.isscalar(cell_size_ratio):
+            cell_size_ratio = np.full_like(at, float(cell_size_ratio), dtype=float)
+        else:
+            cell_size_ratio = np.asarray(cell_size_ratio, dtype=float)
+
+        at = at.reshape(-1, 1)                         # (n,1)
+        cell_size_ratio = cell_size_ratio.reshape(-1,1) # (n,1)
+
         def fun(at, m):
-            if(max(m) < 1e6):
+            if(np.max(m) < 1e6):
                 return(poisson.pmf(at,m))
             else:
                 return(norm.pdf(at,loc=m,scale=np.sqrt(m)))
 
-        x,w = j_roots(50,alpha = bet - 1, beta = alpha - 1)
-        gs = np.sum(w*fun(at, m = lam*(1+x)/2), axis=1)
-        prob = 1/beta_fun(alpha, bet)*2**(-alpha-bet+1)*gs
-        return(prob)
-    def LogLikelihood(x, vals,delay):
+        x, w = j_roots(50, alpha=bet - 1, beta=alpha - 1)  # (50,)
+        m = cell_size_ratio * capture_efficency * lam * (1 + x) / 2.0          # (n,50) 广播
+        gs = np.sum(w * fun(at, m=m), axis=1)              # (n,)
+
+        prob = (1.0 / beta_fun(alpha, bet)) * (2.0 ** (-alpha - bet + 1.0)) * gs
+        return prob
+
+    def LogLikelihood(x, vals,capture_efficency,cell_size_ratio=1):
         kon = x[0]
         koff = x[1]
-        ksyn = x[2]*delay
-        return(-np.sum(np.log( dBP(vals,kon,koff,ksyn) + 1e-10) ) )
+        ksyn = x[2]
+        return(-np.sum(np.log( dBP(vals, kon, koff, ksyn, capture_efficency=capture_efficency, cell_size_ratio=cell_size_ratio) + 1e-10) ) )
+
     x0 = MomentInference(vals)
+
     if np.isnan(x0).any() or any(x0 < 0):
         x0 = np.array([10,10,10])
     bnds = ((1e-3,1e3),(1e-3,1e3), (1, 1e4))
     vals_ = np.copy(vals) # Otherwise the structure is violated.
-    vals_ = vals_ / cell_size_ratio
     try:
-        ll = minimize(LogLikelihood, x0, args = (vals_,delay), method=metod, bounds=bnds)
+        ll = minimize(LogLikelihood, x0, args = (vals_,capture_efficency,cell_size_ratio), method=metod, bounds=bnds)
     except:
         return np.array([np.nan,np.nan,np.nan])
-    #se = ll.hess_inv.todense().diagonal()
     estim = ll.x
     return estim
 

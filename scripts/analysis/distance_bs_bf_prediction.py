@@ -28,64 +28,47 @@ def evaluation(out:'torch.Tensor', label:'torch.Tensor'):
     ap = metrics.average_precision_score(label, score) * 100
     return score, label, pred, acc, auc, ap
 
+
 config_path = "configs/default.yaml"
 config = get_config(config_path)
-add_feature_bin = False
+
 predictions = []
-for eid in ["E116","E118","E003"]:
+
+for eid in ["E116", "E118", "E003"]:
     config["remove_marks"] = []
-    config['masked_marks'] = MARKS
-    
+    # 注意：data.py 期望 masked_marks 是 dict；你这里不做 mask 就给空 dict
+    config["masked_marks"] = {}
 
-    
     seed = config["seed"]
-
-    bsz = config["bsz"]
-    gamma = config["gamma"]
+    bsz  = config["bsz"]
 
     i_max = config["i_max"]
-    w_prom = config["w_prom"]
-    w_max = config["w_max"]
-
+    w_max = config["w_max"]          # 这个决定 max_n_bins（padding 后固定长度）
     n_feats_p = config['promoter_feats_basic_nums'] - len(config["remove_marks"])
-    n_feats_pcres = config['pcres_feats_basic_nums'] 
+
     d_emb = config["embed"]["d_model"]
     embed_kws = config["embed"]
-    pairwise_interaction_kws = config["pairwise_interaction"]
-    regulation_kws = config["regulation"]
     d_head = config["d_head"]
-    targets = ['bs_label','bf_label']
-    npy_dir = "extra/datasets/processed/v1"
 
+    targets = ['bs_label', 'bf_label']
+    npy_dir = "/Volumes/ExtremeSSD/BioStudy/CodeReview/burstformer/extra/datasets/processed/v1"
 
     binsizes = [500]
 
-    for window_size in [1000,2000,5000,10000,20000,40000]:
-        n_bins = window_size // (500*2)
-        keep_bins = range(40-n_bins,40+n_bins)
+    # 关键：直接用 w_prom 控制 window（data.py 会以 20kb 为中心裁剪）
+    for window_size in [1000, 2000, 5000, 10000, 20000, 40000]:
+        # 让 config 里也同步（如果你其它地方会读 config["w_prom"]）
+        config["w_prom"] = window_size
+        w_prom = window_size
 
-        config['perturbation_strength'] = 0
-        config['marked_bin_idxes'] = [i for i in range(80) if i not in keep_bins]
-        for fold in [0,1,2,3]:
-            print(f"eid:{eid},fold:{fold}")
+        for fold in [0, 1, 2, 3]:
+            print(f"eid:{eid}, fold:{fold}, window:{window_size}")
+
             checkpoints = f"checkpoints/{eid}.{fold}.bs_bf_para.model.pt"
-
-            meta_path = f"extra/datasets/processed/v1/meta_datasets/meta_data_{eid}.csv"
-
-            #
-            # Setup end.
-            #
+            meta_path = f"extra/datasets/processed/v2/meta_datasets/meta_data_{eid}_delay_1.0_with_cellsize_1.csv"
 
             seed_everything(seed)
-            meta = (
-                pd.read_csv(meta_path).sample(frac=1, random_state=seed).reset_index(drop=True)
-            )  # load and shuffle.
-
-            # Split genes into two sets (train/val).
-            genes = set(meta.gene_id.unique())
-            n_genes = len(genes)
-            print("Target genes:", len(genes))
-            print(f"n_feats_p:{n_feats_p}")
+            meta = pd.read_csv(meta_path).sample(frac=1, random_state=seed).reset_index(drop=True)
 
             splits = {
                 1: ['chr1', 'chr6', 'chr5', 'chr8', 'chr14', 'chrY'],
@@ -93,25 +76,17 @@ for eid in ["E116","E118","E003"]:
                 3: ['chr2', 'chr3', 'chr4', 'chr16', 'chr18', 'chr20'],
                 4: ['chr9', 'chr13', 'chr17', 'chr19', 'chr22', 'chrX'],
             }
-
-            chromosome_splits = {}
-            for key, chroms in splits.items():
-                for chrom in chroms:
-                    chromosome_splits[chrom] = key
+            chromosome_splits = {chrom: k for k, chroms in splits.items() for chrom in chroms}
 
             qs = [
-                meta[meta.apply(lambda row: chromosome_splits[row['chrom']] == 1,axis=1)].gene_id.tolist(),
-                meta[meta.apply(lambda row: chromosome_splits[row['chrom']] == 2,axis=1)].gene_id.tolist(),
-                meta[meta.apply(lambda row: chromosome_splits[row['chrom']] == 3,axis=1)].gene_id.tolist(),
-                meta[meta.apply(lambda row: chromosome_splits[row['chrom']] == 4,axis=1)].gene_id.tolist(),
+                meta[meta.apply(lambda row: chromosome_splits[row['chrom']] == 1, axis=1)].gene_id.tolist(),
+                meta[meta.apply(lambda row: chromosome_splits[row['chrom']] == 2, axis=1)].gene_id.tolist(),
+                meta[meta.apply(lambda row: chromosome_splits[row['chrom']] == 3, axis=1)].gene_id.tolist(),
+                meta[meta.apply(lambda row: chromosome_splits[row['chrom']] == 4, axis=1)].gene_id.tolist(),
             ]
 
-            train_genes = (
-                qs[(fold + 0) % 4] + qs[(fold + 1) % 4] + qs[(fold + 2) % 4]
-            )
-            val_genes = qs[(fold + 3) % 4]
-
-            print(len(train_genes), len(val_genes))
+            train_genes = qs[(fold + 0) % 4] + qs[(fold + 1) % 4] + qs[(fold + 2) % 4]
+            val_genes   = qs[(fold + 3) % 4]
 
             val_dataset = DeepBurstDataset(
                 meta_path,
@@ -119,37 +94,30 @@ for eid in ["E116","E118","E003"]:
                 val_genes,
                 i_max,
                 binsizes,
-                w_prom,
-                w_max,
+                w_prom,      # 关键：这里传入 window_size
+                w_max,       # 建议保持 40000，让输入维度固定为 80 bins（binsize=500）
                 targets=targets,
-                config = config,
+                config=config,
                 with_gene_id=True
             )
             val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=bsz)
 
             model = DeepBurst(
                 n_feats_p,
-                
                 d_emb,
                 d_head,
-                
                 embed_kws=embed_kws,
                 binsizes=binsizes,
                 seed=42,
                 targets=targets,
-                
             ).to(DEVICE)
 
-            ckpt = torch.load(checkpoints,map_location=DEVICE)
+            ckpt = torch.load(checkpoints, map_location=DEVICE)
             model.load_state_dict(ckpt["net"])
 
-            # bf Test data evaluation
-            # Prepare validation.
             bar = tqdm(enumerate(val_loader, 1), total=len(val_loader))
             gene_ids, val_out, val_label = [], [], []
 
-
-            # Validation.
             model.eval()
             with torch.no_grad():
                 for batch, d in bar:
@@ -161,52 +129,33 @@ for eid in ["E116","E118","E003"]:
                         else:
                             d[k] = v.to(DEVICE)
 
-                    out = model(
-                        d["promoter_feats"][500],
-                    )
+                    out = model(d["promoter_feats"][500])
                     val_out.append(out.cpu())
-
                     val_label.append(d["label"].cpu())
 
             val_out = torch.cat(val_out)
             val_label = torch.cat(val_label)
 
+            val_preds = {t: p for t, p in zip(targets, torch.chunk(val_out, len(targets), axis=-1))}
+            val_labels = {t: y for t, y in zip(targets, torch.chunk(val_label, len(targets), axis=-1))}
 
-            val_preds = {}
-            for target, pred in zip(targets,torch.chunk(val_out, len(targets), axis=-1)):
-                val_preds[target] = pred
-            
-            val_labels = {}
-            for target, label in zip(targets,torch.chunk(val_label, len(targets), axis=-1)):
-                val_labels[target] = label   
-
-            # Metrics.
-
+            records = {"gene_id": gene_ids}
             description = ""
-            records = {}
-            records['gene_id'] = gene_ids
+
             for target in targets:
-                val_score, val_label, val_pred, val_acc, val_auc, val_ap = evaluation(val_preds[target],val_labels[target])
-
-                records[f'{target}_label'] = val_label.cpu().numpy().squeeze()
+                val_score, val_lab, val_pred, val_acc, val_auc, val_ap = evaluation(val_preds[target], val_labels[target])
+                records[f'{target}_label'] = val_lab.cpu().numpy().squeeze()
                 records[f'{target}_score'] = val_score.cpu().numpy().squeeze()
-                records[f'{target}_pred'] = val_pred.cpu().numpy().squeeze()     
-                description += f"{target}: acc={val_acc:.4f}, auc={val_auc:.4f}, ap={val_ap:.4f} " 
-            
-            records['eid'] = eid
-            records['fold'] = fold
-            records['window_size'] = window_size
-            df = pd.DataFrame(records)
-            predictions.append(df)
+                records[f'{target}_pred']  = val_pred.cpu().numpy().squeeze()
+                description += f"{target}: acc={val_acc:.4f}, auc={val_auc:.4f}, ap={val_ap:.4f} "
 
+            records["eid"] = eid
+            records["fold"] = fold
+            records["window_size"] = window_size
+
+            predictions.append(pd.DataFrame(records))
             print(description)
 
-    print(f'EID:{eid}, Done')
-predictions = pd.concat(predictions,axis=0)
-
-predictions.to_csv(f"extra/results/distance_region_predictions_bs_bf.csv",index=False)
-
-
-
-if __name__ == '__main__':
-    print('Done')
+print("All done.")
+predictions = pd.concat(predictions, axis=0)
+predictions.to_csv("extra/results/distance_region_predictions_bs_bf.csv", index=False)

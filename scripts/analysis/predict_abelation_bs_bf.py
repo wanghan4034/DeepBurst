@@ -72,7 +72,7 @@ for eid in ["E116","E118","E003"]:
 
             checkpoints = f"checkpoints/{eid}.remove_{remove_mark}.{fold}.bs_bf_para.model.pt"
 
-            meta_path = f"extra/datasets/processed/v1/meta_datasets/meta_data_{eid}.csv"
+            meta_path = f"extra/datasets/processed/v2/meta_datasets/meta_data_{eid}_delay_1.0_with_cellsize_1.csv"
 
             #
             # Setup end.

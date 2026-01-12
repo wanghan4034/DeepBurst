@@ -1,4 +1,6 @@
 import argparse
+from pathlib import Path
+
 import torch
 import pandas as pd
 from tqdm import tqdm
@@ -13,9 +15,10 @@ from src.model.constants import get_config
 torch.autograd.set_detect_anomaly(True)
 
 
-def evaluation(out: "torch.Tensor", label: "torch.Tensor"):
-    score = out.softmax(axis=1)[:, 1]
-    pred = out.argmax(axis=1)
+def evaluation(out: torch.Tensor, label: torch.Tensor):
+    """Return score/pred and common binary classification metrics."""
+    score = out.softmax(dim=1)[:, 1]
+    pred = out.argmax(dim=1)
 
     acc = metrics.accuracy_score(label, pred) * 100
     auc = metrics.roc_auc_score(label, score) * 100
@@ -25,34 +28,72 @@ def evaluation(out: "torch.Tensor", label: "torch.Tensor"):
 
 def parse_args():
     p = argparse.ArgumentParser("DeepBurst demo inference")
+
+    # Required
     p.add_argument("--eid", type=str, required=True, help="Cell line EID, e.g. E003")
     p.add_argument("--ckpt", type=str, required=True, help="Checkpoint path, e.g. checkpoints/E003.0.bs_bf_para.model.pt")
-    p.add_argument("--data", type=str, required=True, help="Processed dataset root, e.g. extra/datasets/processed/v1")
+    p.add_argument("--npy_dir", type=str, required=True, help="Processed dataset root, e.g. extra/datasets/processed/v1")
+
+    # Optional: meta path. If not provided, we auto-build it from eid + npy_dir.
+    p.add_argument(
+        "--meta",
+        type=str,
+        default=None,
+        help="Optional meta CSV path. If omitted, use {npy_dir}/meta_datasets/meta_data_{eid}.csv",
+    )
+
     p.add_argument("--config", type=str, default="configs/default.yaml", help="YAML config path")
     p.add_argument("--out", type=str, default="extra/results/infer_demo.csv", help="Output CSV path")
+
+    # Compatibility knobs
     p.add_argument("--remove_marks", type=str, default=None, help="Optional single mark name to remove (compat)")
-    p.add_argument("--fold", type=int, default=None, help="Optional: record fold in output CSV (does not affect split unless provided)")
+    p.add_argument("--fold", type=int, default=0, help="Fold index used to define validation split (default: 0)")
+
     return p.parse_args()
+
+
+def build_chromosome_splits():
+    """Chromosome-based 4-fold mapping (same as your training split)."""
+    splits = {
+        1: ["chr1", "chr6", "chr5", "chr8", "chr14", "chrY"],
+        2: ["chr7", "chr10", "chr11", "chr12", "chr15", "chr21"],
+        3: ["chr2", "chr3", "chr4", "chr16", "chr18", "chr20"],
+        4: ["chr9", "chr13", "chr17", "chr19", "chr22", "chrX"],
+    }
+    return {chrom: k for k, chroms in splits.items() for chrom in chroms}
+
+
+def resolve_meta_path(eid: str, npy_dir: str, meta_arg: str | None) -> str:
+    """Resolve meta_path: use --meta if provided, else build default from npy_dir + eid."""
+    if meta_arg is not None and str(meta_arg).strip() != "":
+        return meta_arg
+
+    # Default: {npy_dir}/meta_datasets/meta_data_{eid}.csv
+    default_meta = Path(npy_dir) / "meta_datasets" / f"meta_data_{eid}.csv"
+    if not default_meta.exists():
+        raise FileNotFoundError(
+            f"Meta file not found.\n"
+            f"  Tried default: {default_meta}\n"
+            f"  You can pass an explicit path via: --meta /path/to/meta.csv"
+        )
+    return str(default_meta)
 
 
 def main():
     args = parse_args()
 
-    # ---- config ----
+    # ----- Resolve meta path (supports auto path building) -----
+    meta_path = resolve_meta_path(args.eid, args.npy_dir, args.meta)
+
+    # ----- Load config -----
     config = get_config(args.config)
+    config["remove_marks"] = [args.remove_marks] if args.remove_marks else []
 
-    if args.remove_marks:
-        config["remove_marks"] = [args.remove_marks]
-    else:
-        config["remove_marks"] = []
-
-    seed = config["seed"]
-    seed_everything(seed)
-
+    seed_everything(config["seed"])
     config["marked_bin_idxes"] = []
     config["masked_marks"] = []
 
-    # ---- constants from config ----
+    # ----- Constants from config -----
     bsz = config["bsz"]
     i_max = config["i_max"]
     w_prom = config["w_prom"]
@@ -66,42 +107,32 @@ def main():
     targets = ["bs_label", "bf_label"]
     binsizes = [500]
 
-    # ---- paths ----
-    npy_dir = args.data
-    meta_path = f"{npy_dir}/meta_datasets/meta_data_{args.eid}.csv"
+    # ----- Load meta and build chromosome-based split (vectorized) -----
+    meta = pd.read_csv(meta_path).sample(frac=1, random_state=config["seed"]).reset_index(drop=True)
 
-    # ---- load meta + build chromosome CV split pool (same as your original) ----
-    meta = pd.read_csv(meta_path).sample(frac=1, random_state=seed).reset_index(drop=True)
+    chromosome_splits = build_chromosome_splits()
+    split_id = meta["chrom"].map(chromosome_splits)  # unknown chrom -> NaN
 
-    splits = {
-        1: ["chr1", "chr6", "chr5", "chr8", "chr14", "chrY"],
-        2: ["chr7", "chr10", "chr11", "chr12", "chr15", "chr21"],
-        3: ["chr2", "chr3", "chr4", "chr16", "chr18", "chr20"],
-        4: ["chr9", "chr13", "chr17", "chr19", "chr22", "chrX"],
-    }
-    chromosome_splits = {chrom: k for k, chroms in splits.items() for chrom in chroms}
+    # Filter out rows with unknown chromosomes to avoid KeyError
+    meta = meta.loc[split_id.notna()].copy()
+    split_id = split_id.loc[meta.index].astype(int)
 
-    qs = [
-        meta[meta.apply(lambda row: chromosome_splits[row["chrom"]] == 1, axis=1)].gene_id.tolist(),
-        meta[meta.apply(lambda row: chromosome_splits[row["chrom"]] == 2, axis=1)].gene_id.tolist(),
-        meta[meta.apply(lambda row: chromosome_splits[row["chrom"]] == 3, axis=1)].gene_id.tolist(),
-        meta[meta.apply(lambda row: chromosome_splits[row["chrom"]] == 4, axis=1)].gene_id.tolist(),
-    ]
+    qs = [meta.loc[split_id == k, "gene_id"].tolist() for k in [1, 2, 3, 4]]
 
-    # 你现在只传一个 ckpt；这里需要一个 fold 来定义 val 集合。
-    # 若不传 --fold，则默认按 fold=0（对应你之前循环的 fold=0）。
-    fold = 0 if args.fold is None else int(args.fold)
-
+    fold = int(args.fold)
     train_genes = qs[(fold + 0) % 4] + qs[(fold + 1) % 4] + qs[(fold + 2) % 4]
     val_genes = qs[(fold + 3) % 4]
 
-    print(f"eid={args.eid}, ckpt={args.ckpt}, data={args.data}, fold={fold}")
+    print(f"eid={args.eid}, fold={fold}")
+    print(f"ckpt={args.ckpt}")
+    print(f"meta={meta_path}")
+    print(f"npy_dir={args.npy_dir}")
     print(f"train={len(train_genes)}, val={len(val_genes)}, n_feats_p={n_feats_p}")
 
-    # ---- dataset/loader ----
+    # ----- Dataset / Loader -----
     val_dataset = DeepBurstDataset(
         meta_path,
-        npy_dir,
+        args.npy_dir,
         val_genes,
         i_max,
         binsizes,
@@ -113,7 +144,7 @@ def main():
     )
     val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=bsz)
 
-    # ---- model ----
+    # ----- Model -----
     model = DeepBurst(
         n_feats_p,
         d_emb,
@@ -127,14 +158,16 @@ def main():
     ckpt = torch.load(args.ckpt, map_location=DEVICE)
     model.load_state_dict(ckpt["net"])
 
-    # ---- eval ----
-    bar = tqdm(enumerate(val_loader, 1), total=len(val_loader))
+    # ----- Evaluation -----
+    bar = tqdm(val_loader, total=len(val_loader))
     gene_ids, val_out, val_label = [], [], []
 
     model.eval()
     with torch.no_grad():
-        for _, d in bar:
+        for d in bar:
             gene_ids += d.pop("gene_id")
+
+            # Move batch to device
             for k, v in d.items():
                 if isinstance(v, dict):
                     for _k, _v in v.items():
@@ -149,14 +182,22 @@ def main():
             val_out.append(out.cpu())
             val_label.append(d["label"].cpu())
 
-    val_out = torch.cat(val_out)
-    val_label = torch.cat(val_label)
+    val_out = torch.cat(val_out, dim=0)
+    val_label = torch.cat(val_label, dim=0)
 
-    val_preds = {t: p for t, p in zip(targets, torch.chunk(val_out, len(targets), axis=-1))}
-    val_labels = {t: l for t, l in zip(targets, torch.chunk(val_label, len(targets), axis=-1))}
+    val_preds = dict(zip(targets, torch.chunk(val_out, len(targets), dim=-1)))
+    val_labels = dict(zip(targets, torch.chunk(val_label, len(targets), dim=-1)))
 
-    # ---- metrics + save ----
-    records = {"gene_id": gene_ids, "eid": args.eid, "fold": fold, "ckpt": args.ckpt}
+    # ----- Metrics + Save -----
+    records = {
+        "gene_id": gene_ids,
+        "eid": args.eid,
+        "fold": fold,
+        "ckpt": args.ckpt,
+        "meta": meta_path,
+        "npy_dir": args.npy_dir,
+    }
+
     description = ""
     for target in targets:
         val_score, val_lab, val_pred, val_acc, val_auc, val_ap = evaluation(val_preds[target], val_labels[target])

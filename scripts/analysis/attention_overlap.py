@@ -4,7 +4,7 @@ import numpy as np
 from tqdm import tqdm
 from intervaltree import IntervalTree
 from typing import List
-from src.data.features.genomics import get_cres_infos, get_gene_infos
+from src.data_preprocessing.histone_marks.genomics import get_cres_infos, get_gene_infos
 from src.model.data import DeepBurstDataset
 from src.model.net import DeepBurst
 from src.utils.constants import DEVICE
@@ -55,7 +55,7 @@ regulation_kws = config["regulation"]
 d_head = config["d_head"]
 targets = ['bs_label','bf_label']
 # npy_dir = "extra/datasets/processed/v1"
-npy_dir = f"extra/datasets/processed/v1"
+npy_dir = "/Volumes/ExtremeSSD/BioStudy/CodeReview/burstformer/extra/datasets/processed/v1"
 
 models = {}
 datasets = {}
@@ -65,7 +65,7 @@ for fold in [0,1,2,3]:
     checkpoints = f"checkpoints/{eid}.{fold}.bs_bf_para.model.pt"
 
 
-    meta_path = f"extra/datasets/processed/v1/meta_datasets/meta_data_{eid}.csv"
+    meta_path = f"extra/datasets/processed/v2/meta_datasets/meta_data_{eid}_delay_1.0_with_cellsize_1.csv"
 
     #
     # Setup end.

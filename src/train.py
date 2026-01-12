@@ -12,7 +12,7 @@ from typing import List
 from src.model.data import DeepBurstDataset
 from src.model.net import  DeepBurst
 from src.utils.tools import seed_everything
-from src.utils.constants import DEVICE
+from src.utils.constants import DEVICE, MARKS
 from src.utils.logs import get_logger
 from src.model.constants import get_config
 
@@ -49,6 +49,14 @@ config = get_config(args.config)
 
 config["exp_id"] = args.exp_id  # Override
 config["remove_marks"] = args.remove_marks
+config["keep_marks"] = args.keep_marks
+
+if len(config["keep_marks"]) > 0:
+    if not len(config["remove_marks"]) > 0:
+        remove_marks = [mark for mark in MARKS if mark not in config["keep_marks"] ]
+        config["remove_marks"] = remove_marks
+
+
 seed = config["seed"]
 num_epoch = config["num_epoch"]
 lr = config["lr"]

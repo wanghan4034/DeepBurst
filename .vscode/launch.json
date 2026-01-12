@@ -45,6 +45,15 @@
       "program": "${workspaceFolder}/src/data_preprocessing/label_generation/txburst/txburst_infer.py",
       "console": "integratedTerminal",
       "cwd": "${workspaceFolder}",
+      "args": [
+        "--cell_type",
+        "HepG2",
+        "-o",
+        "extra/datasets/burst/processed_v2",
+        "--delay",
+        "1",
+        "--with_cell_size",
+      ],
       "justMyCode": false
     }
   ]

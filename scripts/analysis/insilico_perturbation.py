@@ -40,7 +40,7 @@ SELECTED_MASKS  = [
     # ("H3K27ac",),
     # ("H3K4me3","H3K27ac"),
 ]
-MASK_STRENGTH   = 0.4              # 0=完全抹除；0.5=减半；>1=增强
+MASK_STRENGTH   = 0              # 0=完全抹除；0.5=减半；>1=增强
 MASK_REGION     = "all"            # 也可改成 bin 索引列表，如 [10,11,12]
 BINSIZES        = [500]
 
@@ -67,19 +67,13 @@ i_max = config_base["i_max"]
 w_prom = config_base["w_prom"]
 w_max = config_base["w_max"]
 
-n_feats_p = (
-    config_base['promoter_feats_basic_nums'] - len(config_base["remove_marks"]) + feature_bin_kws['out_channels']
-    if add_feature_bin else
-    config_base['promoter_feats_basic_nums'] - len(config_base["remove_marks"])
-)
-n_feats_pcres = config_base['pcres_feats_basic_nums']
+n_feats_p = config_base['promoter_feats_basic_nums'] - len(config_base["remove_marks"])
+
 d_emb = config_base["embed"]["d_model"]
 embed_kws = config_base["embed"]
-pairwise_interaction_kws = config_base["pairwise_interaction"]
-regulation_kws = config_base["regulation"]
 d_head = config_base["d_head"]
 targets = ['bs_label', 'bf_label']
-npy_dir = "extra/datasets/processed/v1"
+npy_dir = "/Volumes/ExtremeSSD/BioStudy/CodeReview/burstformer/extra/datasets/processed/v1"
 
 # ---------------------- 生成组合 ---------------------- #
 def powerset(iterable):
@@ -123,7 +117,7 @@ for eid in ["E116", "E118", "E003"]:
 
         checkpoints = f"checkpoints/{eid}.{fold}.bs_bf_para.model.pt"
 
-        meta_path = f"extra/datasets/processed/v1/meta_datasets/meta_data_{eid}.csv"
+        meta_path = f"extra/datasets/processed/v2/meta_datasets/meta_data_{eid}_delay_1.0_with_cellsize_1.csv"
 
         seed_everything(seed)
         meta = (

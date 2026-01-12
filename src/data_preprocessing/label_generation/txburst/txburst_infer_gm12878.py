@@ -149,7 +149,8 @@ def main(cell_type, data_dir, saved_dir, delay, with_cell_size=False):
 
     logger.info(f"burst kinetics inference, celltype: {cell_type}")
 
-    data = read_data(data_dir, cell_type=cell_type)
+    if cell_type == "gm12878":
+        data = pd.read_csv('gm12878.csv', index_col=0)
     print('read_data dataframe shape:', data.shape)
     # transcript_genes = pd.read_csv('extra/datasets/genomic/genes_with_genename.bed')['gene_name'].values
     # data = data.loc[data.index.isin(transcript_genes), :]

@@ -64,7 +64,10 @@ For GPU support, install PyTorch following the official instructions and ensure 
 python scripts/demo_infer.py \
   --eid E003 \
   --ckpt checkpoints/E003.0.bs_bf_para.model.pt \
-  --data extra/datasets/processed/v1
+  --meta extra/datasets/processed/E003_samples/meta_data_E003_samples.csv \
+  --npy_dir extra/datasets/processed/E003_samples \
+  --fold 0 \
+  --out extra/results/E003.fold0.infer.csv
 ```
 
 
@@ -74,7 +77,7 @@ python scripts/demo_infer.py \
 ```
 python train.py \
   --config configs/default.yaml \
-  --meta extra/datasets/processed/v1/meta_datasets/meta_data_E003.csv \
+  --meta extra/datasets/processed/v2/meta_datasets/meta_data_E003.csv \
   --npy-dir extra/datasets/processed/v1 \
   --fold 0 \
   -o checkpoints/E003.0.bs_bf_para.model.pt

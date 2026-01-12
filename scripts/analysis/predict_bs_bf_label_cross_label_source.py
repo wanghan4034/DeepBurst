@@ -64,21 +64,20 @@ pairwise_interaction_kws = config["pairwise_interaction"]
 regulation_kws = config["regulation"]
 d_head = config["d_head"]
 targets = ['bs_label','bf_label']
-npy_dir = "extra/datasets/processed/v1"
+npy_dir = "/Volumes/ExtremeSSD/BioStudy/CodeReview/burstformer/extra/datasets/processed/v1"
 
 
 binsizes = [500]
+
 
 predictions = []
 for eid in ["E116","E118","E003"]:
     for fold in [0,1,2,3]:
         print(f"eid:{eid},fold:{fold}")
-        if remove_marks:
-            checkpoints = f"checkpoints/{eid}.remove_{remove_marks}.{fold}.bs_bf_para_deeptx.model.pt"
-        else:
-            checkpoints = f"checkpoints/{eid}.{fold}.bs_bf_para_deeptx.model.pt"
 
-        meta_path = f"extra/datasets/processed/v1/meta_datasets/meta_data_{eid}_deeptx.csv"
+        checkpoints = f"checkpoints/{eid}.{fold}.bs_bf_para_deeptx.model.pt"
+
+        meta_path = f"extra/datasets/processed/v2/meta_datasets/meta_data_{eid}_delay_1.0_with_cellsize_1.csv"
 
         #
         # Setup end.
@@ -214,10 +213,8 @@ for eid in ["E116","E118","E003"]:
         print(description)
 
 predictions = pd.concat(predictions,axis=0)
-if remove_marks:
-    predictions.to_csv(f'extra/results/remove_{remove_marks}_predictions_bs_bf_deeptx.csv',index=False)
-else:
-    predictions.to_csv(f'extra/results/predictions_bs_bf_deeptx.csv',index=False)
+
+predictions.to_csv(f'extra/results/predictions_bs_bf_deeptx_to_txburst.csv',index=False)
 
 
 if __name__ == '__main__':

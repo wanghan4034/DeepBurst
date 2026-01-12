@@ -79,7 +79,7 @@ for eid in ["E116","E118","E003"]:
         regulation_kws = config["regulation"]
         d_head = config["d_head"]
         targets = ['bs_label','bf_label']
-        npy_dir = "extra/datasets/processed/v1"
+        npy_dir = "/Volumes/ExtremeSSD/BioStudy/CodeReview/burstformer/extra/datasets/processed/v1"
 
 
         binsizes = [500]
@@ -90,7 +90,7 @@ for eid in ["E116","E118","E003"]:
             checkpoints = f"checkpoints/{eid}.keep_{tag}.{fold}.bs_bf_para.model.pt"
 
 
-            meta_path = f"extra/datasets/processed/v1/meta_datasets/meta_data_{eid}.csv"
+            meta_path = f"extra/datasets/processed/v2/meta_datasets/meta_data_{eid}_delay_1.0_with_cellsize_1.csv"
 
             #
             # Setup end.

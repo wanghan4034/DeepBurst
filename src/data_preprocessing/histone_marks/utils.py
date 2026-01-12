@@ -43,39 +43,39 @@ def genomic_slice_concat(chrom: str, start:int, end:int):
 
 
 
-def bin_and_padding(x:np.ndarray, bin_size=500, max_n_bins = 80, strand = '+'):
-    """Given a 2D tensor x, make binned tensor by
-    taking average values of `bin_size` consecutive values.
-    Appropriately pad by
-    left_pad = ceil((max_n_bins - n_bins) / 2)
-    right_pad = floor((max_n_bins - n_bins) / 2)
-    """
-    # Binning.
-    n_bins = math.ceil(x.shape[-1] / bin_size)
-    if strand == '-':
-        x = np.fliplr(x)
+# def bin_and_padding(x:np.ndarray, bin_size=500, max_n_bins = 80, strand = '+'):
+#     """Given a 2D tensor x, make binned tensor by
+#     taking average values of `bin_size` consecutive values.
+#     Appropriately pad by
+#     left_pad = ceil((max_n_bins - n_bins) / 2)
+#     right_pad = floor((max_n_bins - n_bins) / 2)
+#     """
+#     # Binning.
+#     n_bins = math.ceil(x.shape[-1] / bin_size)
+#     if strand == '-':
+#         x = np.fliplr(x)
 
-    x_binned = []
-    for i in range(n_bins):
-        marks = np.mean(x[:len(MARKS), i * bin_size : (i + 1) * bin_size], keepdims=True, axis= -1)
-        seq = np.sum(x[len(MARKS):, i * bin_size : (i + 1) * bin_size], keepdims=True, axis= -1)
-        b = np.concatenate((marks,seq), axis=0)
-        b = np.log1p(b)
-        x_binned.append(b)
-    x_binned = np.concatenate(x_binned, axis=1)
+#     x_binned = []
+#     for i in range(n_bins):
+#         marks = np.mean(x[:len(MARKS), i * bin_size : (i + 1) * bin_size], keepdims=True, axis= -1)
+#         seq = np.sum(x[len(MARKS):, i * bin_size : (i + 1) * bin_size], keepdims=True, axis= -1)
+#         b = np.concatenate((marks,seq), axis=0)
+#         b = np.log1p(b)
+#         x_binned.append(b)
+#     x_binned = np.concatenate(x_binned, axis=1)
 
-    # Padding.
-    left_pad = math.ceil((max_n_bins - n_bins) / 2)
-    right_pad = math.floor((max_n_bins - n_bins) / 2)
+#     # Padding.
+#     left_pad = math.ceil((max_n_bins - n_bins) / 2)
+#     right_pad = math.floor((max_n_bins - n_bins) / 2)
 
-    x_binned = np.concatenate(
-        [
-            np.zeros([x.shape[0], left_pad]),
-            x_binned,
-            np.zeros([x.shape[0], right_pad]),
-        ],
-        axis=1,
-    )
+#     x_binned = np.concatenate(
+#         [
+#             np.zeros([x.shape[0], left_pad]),
+#             x_binned,
+#             np.zeros([x.shape[0], right_pad]),
+#         ],
+#         axis=1,
+#     )
 
-    return x_binned, left_pad, n_bins, right_pad
+#     return x_binned, left_pad, n_bins, right_pad
 

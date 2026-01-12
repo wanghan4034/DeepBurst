@@ -51,22 +51,16 @@ i_max = config["i_max"]
 w_prom = config["w_prom"]
 w_max = config["w_max"]
 
-n_feats_p = config['promoter_feats_basic_nums']  + feature_bin_kws['out_channels'] - len(config["remove_marks"]) if add_feature_bin else config['promoter_feats_basic_nums'] - len(config["remove_marks"])
-n_feats_pcres = config['pcres_feats_basic_nums'] 
+n_feats_p = config['promoter_feats_basic_nums'] - len(config["remove_marks"])
 d_emb = config["embed"]["d_model"]
 embed_kws = config["embed"]
-pairwise_interaction_kws = config["pairwise_interaction"]
-regulation_kws = config["regulation"]
 d_head = config["d_head"]
 targets = ['bs_label','bf_label']
-npy_dir = "extra/datasets/processed/v1"
+npy_dir = "/Volumes/ExtremeSSD/BioStudy/CodeReview/burstformer/extra/datasets/processed/v1"
 
 
 binsizes = [500]
 
-# eid = "E116"
-# fold = 0
-# remove_marks = "remove_H3K9me3."
 with open("extra/results/cell_type_agnostic_bs_bf_para.csv",'w') as w:
     columns = ['bs_auc','bf_auc','fold','eid']
     w.write('\t'.join(columns)+'\n')
@@ -75,7 +69,7 @@ with open("extra/results/cell_type_agnostic_bs_bf_para.csv",'w') as w:
             print(f"eid:{eid},fold:{fold}")
             # checkpoints = f"checkpoints/{eid}.{fold}.model.pt"
             checkpoints = f"checkpoints/agnostic.{fold}.bs_bf_para.model.pt"
-            meta_path = f"extra/datasets/processed/v1/meta_datasets/meta_data_{eid}.csv"
+            meta_path = f"extra/datasets/processed/v2/meta_datasets/meta_data_{eid}_delay_1.0_with_cellsize_1.csv"
 
             seed_everything(seed)
             meta = (

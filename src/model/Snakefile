@@ -1,0 +1,72 @@
+# Snakefile
+
+EIDS   = ["E003", "E118"]
+FOLDS  = [0, 1, 2, 3]
+
+# 所有需要的组蛋白修饰组合（两两配对）
+MARK_PAIRS = [
+    ("H3K4me1", "H3K4me3"),
+    ("H3K4me1", "H3K9me3"),
+    ("H3K4me1", "H3K27me3"),
+    ("H3K4me1", "H3K36me3"),
+    ("H3K4me1", "H3K27ac"),
+    ("H3K4me1", "H3K9ac"),
+    ("H3K4me3", "H3K9me3"),
+    ("H3K4me3", "H3K27me3"),
+    ("H3K4me3", "H3K36me3"),
+    ("H3K4me3", "H3K27ac"),
+    ("H3K4me3", "H3K9ac"),
+    ("H3K9me3", "H3K27me3"),
+    ("H3K9me3", "H3K36me3"),
+    ("H3K9me3", "H3K27ac"),
+    ("H3K9me3", "H3K9ac"),
+    ("H3K27me3", "H3K36me3"),
+    ("H3K27me3", "H3K27ac"),
+    ("H3K27me3", "H3K9ac"),
+    ("H3K36me3", "H3K27ac"),
+    ("H3K36me3", "H3K9ac"),
+    ("H3K27ac", "H3K9ac"),
+]
+
+# tag: H3K4me1_H3K4me3
+TAGS = [f"{m1}_{m2}" for m1, m2 in MARK_PAIRS]
+
+# 映射 tag -> "H3K4me1 H3K4me3" 这种形式，方便传给 --keep_marks
+TAG2MARKS = {f"{m1}_{m2}": f"{m1} {m2}" for m1, m2 in MARK_PAIRS}
+
+
+rule all:
+    input:
+        expand(
+            "checkpoints/{eid}.keep_{tag}.{fold}.No_feature_bin.bs_bf_para.model.pt",
+            eid=EIDS,
+            tag=TAGS,
+            fold=FOLDS,
+        )
+
+
+rule train_model:
+    """
+    对每个 eid / keep_marks 组合 / fold 训练一个模型
+    """
+    output:
+        ckpt="checkpoints/{eid}.keep_{tag}.{fold}.No_feature_bin.bs_bf_para.model.pt",
+        log="logs/{eid}.keep_{tag}.{fold}.bs_bf_para.train.log"
+    params:
+        meta=lambda wc: f"extra/datasets/processed/v2/meta_datasets/meta_data_{wc.eid}.csv",
+        keep_marks=lambda wc: TAG2MARKS[wc.tag],
+        npy_dir="/GPUFS/sysu_jjzhang_3/wanghan/burstformer/extra/datasets/processed/v1"
+    shell:
+        r"""
+        echo "experiment {wildcards.eid} {params.keep_marks} {wildcards.fold}"
+        python src/model/train.py \
+            --config configs/default.yaml \
+            --meta {params.meta} \
+            --npy-dir {params.npy_dir} \
+            --fold {wildcards.fold} \
+            -o {output.ckpt} \
+            --exp-id 2 \
+            --binsizes 500 \
+            --keep_marks {params.keep_marks} \
+            > {output.log} 2>&1
+        """

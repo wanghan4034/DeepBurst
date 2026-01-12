@@ -1,7 +1,11 @@
+import argparse
 import torch
+import torch.nn as nn
+import os
 import pandas as pd
 from tqdm import tqdm
 from sklearn import metrics
+import seaborn as sns
 from src.model.data import DeepBurstDataset
 from src.model.net import  DeepBurst
 from src.utils.tools import seed_everything
@@ -53,12 +57,14 @@ w_prom = config["w_prom"]
 w_max = config["w_max"]
 
 n_feats_p = config['promoter_feats_basic_nums'] - len(config["remove_marks"])
+n_feats_pcres = config['pcres_feats_basic_nums'] 
 d_emb = config["embed"]["d_model"]
 embed_kws = config["embed"]
+pairwise_interaction_kws = config["pairwise_interaction"]
+regulation_kws = config["regulation"]
 d_head = config["d_head"]
-targets = ['mean_label']
-# npy_dir = "extra/datasets/processed/v1"
-npy_dir = 'extra/datasets/processed/v1'
+targets = ['bs_label','bf_label']
+npy_dir = "/Volumes/ExtremeSSD/BioStudy/CodeReview/burstformer/extra/datasets/processed/v1"
 
 
 binsizes = [500]
@@ -67,12 +73,10 @@ predictions = []
 for eid in ["E116","E118","E003"]:
     for fold in [0,1,2,3]:
         print(f"eid:{eid},fold:{fold}")
-        if remove_marks:
-            checkpoints = f"checkpoints/{eid}.remove_{remove_marks}.{fold}.mean_para.model.pt"
-        else:
-            checkpoints = f"checkpoints/{eid}.{fold}.mean_para.model.pt"
 
-        meta_path = f"extra/datasets/processed/v2/meta_datasets/meta_data_{eid}_delay_1.0_with_cellsize_1.csv"
+        checkpoints = f"checkpoints/{eid}.{fold}.bs_bf_para_deeptx.model.pt"
+
+        meta_path = f"extra/datasets/processed/v1/meta_datasets/meta_data_{eid}_deeptx.csv"
 
         #
         # Setup end.
@@ -133,12 +137,15 @@ for eid in ["E116","E118","E003"]:
 
         model = DeepBurst(
             n_feats_p,
+            # 
             d_emb,
             d_head,
+            # 
             embed_kws=embed_kws,
             binsizes=binsizes,
             seed=42,
             targets=targets,
+            # 
         ).to(DEVICE)
 
         ckpt = torch.load(checkpoints,map_location=DEVICE)
@@ -163,6 +170,7 @@ for eid in ["E116","E118","E003"]:
                         d[k] = v.to(DEVICE)
 
                 out = model(
+                    # d['promoter_seq'],
                     d["promoter_feats"][500],
                     d["promoter_pad_masks"][500],
                 )
@@ -204,10 +212,8 @@ for eid in ["E116","E118","E003"]:
         print(description)
 
 predictions = pd.concat(predictions,axis=0)
-if remove_marks:
-    predictions.to_csv(f'extra/results/remove_{remove_marks}_predictions_mean.csv',index=False)
-else:
-    predictions.to_csv(f'extra/results/predictions_mean.csv',index=False)
+
+predictions.to_csv(f'extra/results/predictions_bs_bf_deeptx.csv',index=False)
 
 
 if __name__ == '__main__':

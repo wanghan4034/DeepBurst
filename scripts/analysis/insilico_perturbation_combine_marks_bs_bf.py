@@ -76,7 +76,7 @@ for eid in ["E116","E118","E003"]:
             print(f"eid:{eid},fold:{fold}")
             checkpoints = f"checkpoints/{eid}.keep_{model_tag}.{fold}.bs_bf_para.model.pt"
 
-            meta_path = f"extra/datasets/processed/v1/meta_datasets/meta_data_{eid}.csv"
+            meta_path = f"extra/datasets/processed/v2/meta_datasets/meta_data_{eid}_delay_1.0_with_cellsize_1.csv"
 
             #
             # Setup end.
@@ -208,7 +208,7 @@ for eid in ["E116","E118","E003"]:
     print(f'EID:{eid}, keep_mark:{model_tag} Done')
 predictions = pd.concat(predictions,axis=0)
 
-# predictions.to_csv(f"extra/results/keep_{model_tag}_perturbation_predictions_bs_bf.csv",index=False)
+predictions.to_csv(f"extra/results/keep_{model_tag}_perturbation_predictions_bs_bf.csv",index=False)
 
 
 

@@ -1,33 +1,27 @@
-import argparse
-import torch
-import torch.nn as nn
-import os
 import pandas as pd
+import torch
 from tqdm import tqdm
 from sklearn import metrics
-import seaborn as sns
-
-from src.model.data import DeepBurstDataset
-from src.model.net import DeepBurst
 from src.utils.tools import seed_everything
 from src.utils.constants import DEVICE
-from src.model.constants import get_config, PERTURBATION_STRENGTH, PERTURBATION_REGION
+from src.model.constants import get_config, MARKS, PERTURBATION_STRENGTH, PERTURBATION_REGION
 
-MARKS = ["H3K4me1","H3K4me3","H3K9me3","H3K27me3","H3K36me3","H3K27ac","H3K9ac"]
-torch.autograd.set_detect_anomaly(True)
+# 关键：用你的 data.py 对应的 Dataset
+# 如果你已经把 data.py 放到了 src/model/data.py，就继续用这一行：
+from src.model.data import DeepBurstDataset
+# 如果你现在就是用项目根目录下的 data.py（与当前脚本同目录），用这一行：
+# from data import DeepBurstDataset
 
-def get_lr(optimizer):
-    for param_group in optimizer.param_groups:
-        return param_group["lr"]
+from src.model.net import DeepBurst
 
 def evaluation(out: torch.Tensor, label: torch.Tensor):
     score = out.softmax(axis=1)[:, 1]
     pred = out.argmax(axis=1)
-
     acc = metrics.accuracy_score(label, pred) * 100
     auc = metrics.roc_auc_score(label, score) * 100
     ap  = metrics.average_precision_score(label, score) * 100
     return score, label, pred, acc, auc, ap
+
 
 config_path = "configs/default.yaml"
 config = get_config(config_path)
@@ -38,58 +32,52 @@ for eid in ["E116"]:
     for keep_mark in MARKS:
         print(f"EID:{eid}, keep_mark:{keep_mark}")
 
+        # keep 一个 mark，remove 其余 mark（你的原逻辑）
         keep_marks = [keep_mark]
         remove_marks = [m for m in MARKS if m not in keep_marks]
-
-        if remove_marks:
-            config["remove_marks"] = remove_marks
-            model_tag = "_".join(remove_marks)
-        else:
-            config["remove_marks"] = []
-            model_tag = None
+        config["remove_marks"] = remove_marks
+        model_tag = "_".join(remove_marks)
 
         seed = config["seed"]
         bsz = config["bsz"]
-
         i_max = config["i_max"]
         w_prom = config["w_prom"]
         w_max = config["w_max"]
 
-        # 注意：这里假设 promoter_feats_basic_nums 对应“marks 数”
-        n_feats_p = config["promoter_feats_basic_nums"] - len(config["remove_marks"])
+        # n_feats_p 仍然沿用你原来的写法（注意它必须与 Dataset 输出的 mark 数一致）
+        n_feats_p = config["promoter_feats_basic_nums"] - len(remove_marks)
+
         d_emb = config["embed"]["d_model"]
         embed_kws = config["embed"]
         d_head = config["d_head"]
 
-        targets = ["mean_label"]
+        targets = ["bs_label", "bf_label"]
         npy_dir = "/Volumes/ExtremeSSD/BioStudy/CodeReview/burstformer/extra/datasets/processed/v1"
         binsizes = [500]
 
-        # data.py 使用 PERTURBATION_REGION 控制 bins；marked_bin_idxes 这个字段不再需要
-        marked_bin_idxes = list(range(80))  # 或者使用 "all"
+        # 如果你想指定特定 bins（例如 0..79），在 data.py 中对应 PERTURBATION_REGION
+        marked_bin_idxes = list(range(80))  # 可选：也可以用 "all"
 
         for perturbation_strength in range(11):
             strength = perturbation_strength * 0.1
-            config["perturbation_strength"] = strength  # 保留：即便 data.py 不用也无妨
+            config["perturbation_strength"] = strength  # 你原先写了这个字段，保留无妨
 
-            # -----------------------------
-            # 关键：适配 data.py 的 masked_marks 结构（dict）
-            # -----------------------------
+            # -----------------------
+            # 核心适配：masked_marks 改成 dict
+            # -----------------------
             config["masked_marks"] = {
                 keep_mark: {
                     PERTURBATION_STRENGTH: strength,
-                    PERTURBATION_REGION: marked_bin_idxes,  # 或 "all"
+                    # 任选其一：
+                    # PERTURBATION_REGION: "all",
+                    PERTURBATION_REGION: marked_bin_idxes,
                 }
             }
 
             for fold in [0, 1, 2, 3]:
                 print(f"eid:{eid}, fold:{fold}")
 
-                if remove_marks:
-                    checkpoints = f"checkpoints/{eid}.remove_{model_tag}.{fold}.mean_para.model.pt"
-                else:
-                    checkpoints = f"checkpoints/{eid}.{fold}.mean_para.model.pt"
-
+                checkpoints = f"checkpoints/{eid}.remove_{model_tag}.{fold}.bs_bf_para.model.pt"
                 meta_path = f"extra/datasets/processed/v2/meta_datasets/meta_data_{eid}_delay_1.0_with_cellsize_1.csv"
 
                 seed_everything(seed)
@@ -111,16 +99,16 @@ for eid in ["E116"]:
                 ]
 
                 train_genes = qs[(fold + 0) % 4] + qs[(fold + 1) % 4] + qs[(fold + 2) % 4]
-                val_genes   = qs[(fold + 3) % 4]
+                val_genes = qs[(fold + 3) % 4]
 
                 val_dataset = DeepBurstDataset(
-                    meta_path,
-                    npy_dir,
-                    val_genes,
-                    i_max,
-                    binsizes,
-                    w_prom,
-                    w_max,
+                    meta=meta_path,
+                    npy_dir=npy_dir,
+                    gene_ids=val_genes,
+                    i_max=i_max,
+                    binsizes=binsizes,
+                    w_prom=w_prom,
+                    w_max=w_max,
                     targets=targets,
                     config=config,
                     with_gene_id=True,
@@ -148,7 +136,8 @@ for eid in ["E116"]:
                     for _, d in bar:
                         gene_ids += d.pop("gene_id")
 
-                        # 将 batch 中的 tensor / dict[tensor] 放到 DEVICE
+                        # data.py 的 item 中除了 promoter_feats，还有 promoter_pad_masks（dict）
+                        # 你现有模型 forward 只用 promoter_feats[500]，所以 pad_masks 不影响
                         for k, v in d.items():
                             if isinstance(v, dict):
                                 for _k, _v in v.items():
@@ -163,37 +152,24 @@ for eid in ["E116"]:
                 val_out = torch.cat(val_out)
                 val_label = torch.cat(val_label)
 
-                val_preds = {}
-                for target, pred in zip(targets, torch.chunk(val_out, len(targets), axis=-1)):
-                    val_preds[target] = pred
+                val_preds = {t: p for t, p in zip(targets, torch.chunk(val_out, len(targets), axis=-1))}
+                val_labels = {t: y for t, y in zip(targets, torch.chunk(val_label, len(targets), axis=-1))}
 
-                val_labels = {}
-                for target, label in zip(targets, torch.chunk(val_label, len(targets), axis=-1)):
-                    val_labels[target] = label
-
-                description = ""
                 records = {"gene_id": gene_ids}
-
-                for target in targets:
-                    val_score, y_true, y_pred, val_acc, val_auc, val_ap = evaluation(
-                        val_preds[target], val_labels[target]
-                    )
-
-                    records[f"{target}_label"] = y_true.cpu().numpy().squeeze()
-                    records[f"{target}_score"] = val_score.cpu().numpy().squeeze()
-                    records[f"{target}_pred"]  = y_pred.cpu().numpy().squeeze()
-                    description += f"{target}: acc={val_acc:.4f}, auc={val_auc:.4f}, ap={val_ap:.4f} "
+                desc = ""
+                for t in targets:
+                    val_score, y_true, y_pred, acc, auc, ap = evaluation(val_preds[t], val_labels[t])
+                    records[f"{t}_label"] = y_true.cpu().numpy().squeeze()
+                    records[f"{t}_score"] = val_score.cpu().numpy().squeeze()
+                    records[f"{t}_pred"]  = y_pred.cpu().numpy().squeeze()
+                    desc += f"{t}: acc={acc:.4f}, auc={auc:.4f}, ap={ap:.4f} "
 
                 records["fold"] = fold
                 records["keep_mark"] = keep_mark
-                records["perturbation_strength"] = strength  # 用真实 float 强度
+                records["perturbation_strength"] = strength
 
                 predictions.append(pd.DataFrame(records))
-                print(description)
+                print(desc)
 
-    print(f"EID:{eid} done.")
     predictions = pd.concat(predictions, axis=0)
-    predictions.to_csv(f"extra/results/{eid}_perturbation_predictions_mean.csv", index=False)
-
-if __name__ == "__main__":
-    print("Done")
+    predictions.to_csv(f"extra/results/{eid}_perturbation_predictions_bs_bf.csv", index=False)

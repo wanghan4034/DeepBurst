@@ -3,16 +3,16 @@ import numpy as np
 import pandas as pd
 from typing import Dict
 
-from benchmarks.randomforest.data import build_feature_matrix
-from benchmarks.randomforest.model import train_and_eval_classifier
+from benchmarks.baseline_classifiers.data import build_feature_matrix
+from benchmarks.baseline_classifiers.model import train_and_eval_classifier
 
 
 def main():
     # 路径按你的项目调整
-    eid = 'E118'
+    eid = 'E003'
     tag = 'deeptx_delay_1'
-    # meta_path = f"extra/datasets/processed/v1/meta_datasets/meta_data_{eid}.csv"
-    meta_path = f"extra/datasets/processed/v1/meta_datasets/meta_data_{eid}_{tag}.csv"    
+    meta_path = f"extra/datasets/processed/v2/meta_datasets/meta_data_{eid}_delay_1.0_with_cellsize_1.csv"
+    # meta_path = f"extra/datasets/processed/v1/meta_datasets/meta_data_{eid}_{tag}.csv"    
     npy_dir = "extra/datasets/processed/v1"
     binsizes = [500]
     print(f"Processing EID: {eid}")
@@ -111,7 +111,8 @@ def main():
         columns=["eid", "fold", "target", "method", "auc", "acc"]
     )
 
-    out_path = f"benchmarks/randomforest/results/{eid}_bs_bf_para_{tag}_indicators.csv"
+    # out_path = f"benchmarks/randomforest/results/{eid}_bs_bf_para_{tag}_indicators.csv"
+    out_path = f"benchmarks/randomforest/results/{eid}_bs_bf_para_indicators.csv"
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     results_df.to_csv(out_path, index=False)
     print(f"\nSaved indicators to: {out_path}")
