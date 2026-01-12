@@ -49,14 +49,13 @@ For GPU support, install PyTorch following the official instructions and ensure 
 
 ## **Option A: Inference with a pretrained checkpoint (recommended)**
 
-1. Download the processed dataset and pretrained checkpoints from **GitHub Releases**:
+1. Download the processed dataset and pretrained checkpoints from **Zenodo**:
 
-- Releases page: https://github.com/wanghan4034/DeepBurst/releases
+- Releases page: 10.5281/zenodo.18219742
 - Assets to download (example names; adjust to your release assets):
-  - deepburst_processed_data_v1.zip
-  - deepburst_checkpoints_v1.zip
+  - deepburst_processed_data.zip
+  - deepburst_checkpoints.zip
 
-> Note: A Zenodo archive (with DOI) will be added in a future release. For now, please use GitHub Releases.
 
 1. Unzip and run inference:
 
@@ -78,7 +77,7 @@ python scripts/demo_infer.py \
 python train.py \
   --config configs/default.yaml \
   --meta extra/datasets/processed/v2/meta_datasets/meta_data_E003.csv \
-  --npy-dir extra/datasets/processed/v1 \
+  --npy-dir extra/datasets/processed/v2 \
   --fold 0 \
   -o checkpoints/E003.0.bs_bf_para.model.pt
 ```
@@ -90,8 +89,8 @@ python train.py \
 - src/ core model and utilities
 - scripts/ demo, analysis, and figure-generation scripts
 - configs/ YAML configs for training/inference
-- checkpoints/ pretrained models (download from Releases)
-- extra/datasets/ processed data, gene annotations, and resources (download from Releases)
+- checkpoints/ pretrained models (download from Zenodo)
+- extra/datasets/ processed data, gene annotations, and resources (download from Zenodo)
 
 # **Full pipeline**
 
@@ -149,7 +148,7 @@ python src/data/data_process.py \
   --eid E003 \
   --gene extra/datasets/genomic/hg19/genes.bed \
   --epi_dir extra/datasets/epigenetic/hg19 \
-  -o extra/datasets/processed/v1
+  -o extra/datasets/processed/v2
 ```
 
 
@@ -181,8 +180,8 @@ julia TX_inferrer.jl data/H1_scRNA.csv inferred_results.csv
 ```
 python src/data/burst/data_convert.py \
   --eid E003 \
-  --gene_id2neighbors extra/datasets/processed/v1/E003/gene_id2neighbors_E003.csv \
-  -o extra/datasets/processed/v1/meta_datasets
+  --gene_id2neighbors extra/datasets/processed/v2/E003/gene_id2neighbors_E003.csv \
+  -o extra/datasets/processed/v2/meta_datasets
 ```
 
 
@@ -200,8 +199,8 @@ eid=E003
 fold=0
 python train.py \
   --config configs/default.yaml \
-  --meta extra/datasets/processed/v1/meta_datasets/meta_data_${eid}.csv \
-  --npy-dir extra/datasets/processed/v1 \
+  --meta extra/datasets/processed/v2/meta_datasets/meta_data_${eid}.csv \
+  --npy-dir extra/datasets/processed/v2 \
   --fold $fold \
   -o checkpoints/${eid}.${fold}.bs_bf_para.model.pt 
 ```
@@ -229,13 +228,10 @@ git clone --recurse-submodules https://github.com/wanghan4034/DeepBurst.git
 
 # **Model/data downloads**
 
-Pretrained checkpoints and processed datasets are provided via **GitHub Releases**:
+Pretrained checkpoints and processed datasets are provided via **Zenodo**:
 
-- https://github.com/wanghan4034/DeepBurst/releases
+- 10.5281/zenodo.18219742
 
-
-
-A Zenodo archive with DOI will be added in a future release; once available, we will mirror the same assets there for long-term archival.
 
 # **System requirements**
 
