@@ -51,7 +51,7 @@ For GPU support, install PyTorch following the official instructions and ensure 
 
 1. Download the processed dataset and pretrained checkpoints from **Zenodo**:
 
-- Releases page: [DOI: 10.5281/zenodo.18219742](https://doi.org/10.5281/zenodo.18219742)
+- Releases page: [DOI: 10.5281/zenodo.18227448](https://doi.org/10.5281/zenodo.18227448)
 - Assets to download (example names; adjust to your release assets):
   - deepburst_processed_data.zip
   - deepburst_checkpoints.zip
@@ -230,7 +230,7 @@ git clone --recurse-submodules https://github.com/wanghan4034/DeepBurst.git
 
 Pretrained checkpoints and processed datasets are provided via **Zenodo**:
 
-- [DOI: 10.5281/zenodo.18219742](https://doi.org/10.5281/zenodo.18219742)
+- [DOI: 10.5281/zenodo.18227448](https://doi.org/10.5281/zenodo.18227448)
 
 
 # **System requirements**
