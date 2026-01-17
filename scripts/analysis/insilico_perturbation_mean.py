@@ -62,7 +62,7 @@ for eid in ["E116"]:
         d_head = config["d_head"]
 
         targets = ["mean_label"]
-        npy_dir = "/Volumes/ExtremeSSD/BioStudy/CodeReview/burstformer/extra/datasets/processed/v1"
+        npy_dir = "extra/datasets/processed/v1"
         binsizes = [500]
 
         # data.py 使用 PERTURBATION_REGION 控制 bins；marked_bin_idxes 这个字段不再需要

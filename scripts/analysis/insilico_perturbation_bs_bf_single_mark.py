@@ -52,7 +52,7 @@ for eid in ["E116"]:
         d_head = config["d_head"]
 
         targets = ["bs_label", "bf_label"]
-        npy_dir = "/Volumes/ExtremeSSD/BioStudy/CodeReview/burstformer/extra/datasets/processed/v1"
+        npy_dir = "extra/datasets/processed/v1"
         binsizes = [500]
 
         # 如果你想指定特定 bins（例如 0..79），在 data.py 中对应 PERTURBATION_REGION

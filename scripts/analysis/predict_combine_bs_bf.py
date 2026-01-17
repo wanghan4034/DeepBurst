@@ -79,7 +79,7 @@ for eid in ["E116","E118","E003"]:
         regulation_kws = config["regulation"]
         d_head = config["d_head"]
         targets = ['bs_label','bf_label']
-        npy_dir = "/Volumes/ExtremeSSD/BioStudy/CodeReview/burstformer/extra/datasets/processed/v1"
+        npy_dir = "extra/datasets/processed/v1"
 
 
         binsizes = [500]

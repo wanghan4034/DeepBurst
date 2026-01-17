@@ -73,7 +73,7 @@ d_emb = config_base["embed"]["d_model"]
 embed_kws = config_base["embed"]
 d_head = config_base["d_head"]
 targets = ['bs_label', 'bf_label']
-npy_dir = "/Volumes/ExtremeSSD/BioStudy/CodeReview/burstformer/extra/datasets/processed/v1"
+npy_dir = "extra/datasets/processed/v1"
 
 # ---------------------- 生成组合 ---------------------- #
 def powerset(iterable):
