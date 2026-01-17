@@ -90,20 +90,3 @@ do
     done 
 done 
 
-
-# Active & repressive model valid 
-echo "Job7"
-for eid in E003 E116 E118
-do
-    for mark in  'H3K27ac H3K9ac H3K4me1 H3K4me3' 'H3K9me3 H3K27me3 H3K36me3'
-    do
-        for fold in 0 1 2 3
-        do  
-            echo "experiment $eid $mark $fold"
-            tag=`echo $mark | tr ' ' '_'`
-            echo "experiment tag: $tag"
-            python train.py --config configs/default.yaml --meta extra/datasets/processed/v1/meta_datasets/meta_data_$eid.csv  --npy-dir extra/datasets/processed/v1 --fold $fold  -o checkpoints/$eid.$tag.$fold.bs_bf_para.model.pt --exp-id 2 --binsizes 500 --remove_marks $mark > logs/$eid.$tag.$fold.bs_bf_para.train.log 2>&1
-            sleep 120
-        done
-    done 
-done 
