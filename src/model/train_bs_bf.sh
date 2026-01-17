@@ -1,7 +1,3 @@
-export LD_LIBRARY_PATH=/GPUFS/sysu_jjzhang_3/.conda/envs/chromoformer/lib:$LD_LIBRARY_PATH
-export WANDB_MODE=offline
-
-
 # cell-type specific model
 echo "Job1"
 for eid in E003 E116 E118
