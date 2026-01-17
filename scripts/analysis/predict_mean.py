@@ -31,7 +31,7 @@ def evaluation(out:'torch.Tensor', label:'torch.Tensor'):
 
 config_path = "configs/default.yaml"
 config = get_config(config_path)
-add_feature_bin = False
+
 
 remove_marks = None
 if remove_marks:

@@ -47,7 +47,7 @@ BINSIZES        = [500]
 # 其他训练/评测设置
 config_path = "configs/default.yaml"
 config_base = get_config(config_path)
-add_feature_bin = False
+
 
 remove_marks = None
 if remove_marks:

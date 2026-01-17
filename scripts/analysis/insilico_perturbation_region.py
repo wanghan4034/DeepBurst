@@ -75,7 +75,7 @@ def main():
     config["masked_marks"]   = {}  # 运行时会覆盖
 
     # 一些模型尺寸参数
-    add_feature_bin = False
+    
     
     n_feats_p = (
         config['promoter_feats_basic_nums'] - len(config["remove_marks"]) + feature_bin_kws['out_channels']

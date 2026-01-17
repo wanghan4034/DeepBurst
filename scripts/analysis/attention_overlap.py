@@ -25,8 +25,7 @@ def get_lr(optimizer):
 config_path = "configs/default.yaml"
 config = get_config(config_path)
 config['masked_marks'] = []
-# add_feature_bin = True
-add_feature_bin = False
+
 
 eid = 'E116'
 remove_marks = None

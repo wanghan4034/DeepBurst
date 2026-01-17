@@ -35,7 +35,7 @@ def evaluation(out:'torch.Tensor', label:'torch.Tensor'):
 
 config_path = "configs/default.yaml"
 config = get_config(config_path)
-add_feature_bin = False
+
 
 binsizes = [500]
 

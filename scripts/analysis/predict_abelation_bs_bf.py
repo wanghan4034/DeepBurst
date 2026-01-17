@@ -32,7 +32,7 @@ def evaluation(out:'torch.Tensor', label:'torch.Tensor'):
 
 config_path = "configs/default.yaml"
 config = get_config(config_path)
-add_feature_bin = False
+
 
 predictions = []
 for eid in ["E116","E118","E003"]:
