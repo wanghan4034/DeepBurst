@@ -11,7 +11,7 @@ def main():
     # 路径按你的项目调整
     eid = 'E003'
     tag = 'deeptx_delay_1'
-    meta_path = f"extra/datasets/processed/v2/meta_datasets/meta_data_{eid}_delay_1.0_with_cellsize_1.csv"
+    meta_path = f"extra/datasets/processed/v2/meta_datasets/meta_data_{eid}.csv"
     # meta_path = f"extra/datasets/processed/v1/meta_datasets/meta_data_{eid}_{tag}.csv"    
     npy_dir = "extra/datasets/processed/v1"
     binsizes = [500]

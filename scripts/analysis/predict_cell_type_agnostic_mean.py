@@ -72,7 +72,7 @@ with open("extra/results/cell_type_agnostic_mean_para.csv",'w') as w:
         for fold in [0,1,2,3]:
             print(f"eid:{eid},fold:{fold}")
             checkpoints = f"checkpoints/agnostic.{fold}.mean_para.model.pt"
-            meta_path = f"extra/datasets/processed/v2/meta_datasets/meta_data_{eid}_delay_1.0_with_cellsize_1.csv"
+            meta_path = f"extra/datasets/processed/v2/meta_datasets/meta_data_{eid}.csv"
 
             #
             # Setup end.

@@ -78,7 +78,7 @@ for eid in ["E116"]:
                 print(f"eid:{eid}, fold:{fold}")
 
                 checkpoints = f"checkpoints/{eid}.remove_{model_tag}.{fold}.bs_bf_para.model.pt"
-                meta_path = f"extra/datasets/processed/v2/meta_datasets/meta_data_{eid}_delay_1.0_with_cellsize_1.csv"
+                meta_path = f"extra/datasets/processed/v2/meta_datasets/meta_data_{eid}.csv"
 
                 seed_everything(seed)
                 meta = pd.read_csv(meta_path).sample(frac=1, random_state=seed).reset_index(drop=True)
