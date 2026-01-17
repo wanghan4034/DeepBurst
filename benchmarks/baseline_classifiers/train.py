@@ -12,7 +12,6 @@ def main():
     eid = 'E003'
     tag = 'deeptx_delay_1'
     meta_path = f"extra/datasets/processed/v2/meta_datasets/meta_data_{eid}.csv"
-    # meta_path = f"extra/datasets/processed/v1/meta_datasets/meta_data_{eid}_{tag}.csv"    
     npy_dir = "extra/datasets/processed/v1"
     binsizes = [500]
     print(f"Processing EID: {eid}")
