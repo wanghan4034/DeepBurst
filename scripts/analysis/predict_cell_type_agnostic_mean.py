@@ -52,12 +52,9 @@ i_max = config["i_max"]
 w_prom = config["w_prom"]
 w_max = config["w_max"]
 
-n_feats_p = config['promoter_feats_basic_nums']  + feature_bin_kws['out_channels'] - len(config["remove_marks"]) if add_feature_bin else config['promoter_feats_basic_nums'] - len(config["remove_marks"])
-n_feats_pcres = config['pcres_feats_basic_nums'] 
+n_feats_p = config['promoter_feats_basic_nums'] - len(config["remove_marks"])
 d_emb = config["embed"]["d_model"]
 embed_kws = config["embed"]
-pairwise_interaction_kws = config["pairwise_interaction"]
-regulation_kws = config["regulation"]
 d_head = config["d_head"]
 targets = ['mean_label']
 npy_dir = "extra/datasets/processed/v1"
