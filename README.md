@@ -51,7 +51,7 @@ For GPU support, install PyTorch following the official instructions and ensure 
 
 1. Download the processed dataset and pretrained checkpoints from Zenodo (they will be made publicly available upon acceptance).
 
-- Assets to download (example names; adjust to your release assets):
+- Assets to download:
   - deepburst_processed_data.zip
   - deepburst_checkpoints.zip
   - deepburst_results.zip
