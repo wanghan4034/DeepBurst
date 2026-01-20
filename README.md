@@ -274,7 +274,7 @@ If you use DeepBurst in your work, please cite the accompanying manuscript:
 @misc{DeepBurst,
   title   = {DeepBurst: Predicting transcriptional bursting kinetics from histone modification profiles},
   author  = {Wang, Han and others},
-  year    = {2025},
+  year    = {2026},
   note    = {Manuscript in preparation}
 }
 ```
