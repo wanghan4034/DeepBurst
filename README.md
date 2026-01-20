@@ -49,12 +49,12 @@ For GPU support, install PyTorch following the official instructions and ensure 
 
 ## **Option A: Inference with a pretrained checkpoint (recommended)**
 
-1. Download the processed dataset and pretrained checkpoints from **Zenodo**:
+1. Download the processed dataset and pretrained checkpoints from Zenodo (they will be made publicly available upon acceptance).
 
-- Releases page: [DOI: 10.5281/zenodo.18227448](https://doi.org/10.5281/zenodo.18227448)
 - Assets to download (example names; adjust to your release assets):
   - deepburst_processed_data.zip
   - deepburst_checkpoints.zip
+  - deepburst_results.zip
 
 
 1. Unzip and run inference:
@@ -228,9 +228,8 @@ git clone --recurse-submodules https://github.com/wanghan4034/DeepBurst.git
 
 # **Model/data downloads**
 
-Pretrained checkpoints and processed datasets are provided via **Zenodo**:
+Pretrained checkpoints and processed datasets are provided via **Zenodo** (they will be made publicly available upon acceptance):
 
-- [DOI: 10.5281/zenodo.18227448](https://doi.org/10.5281/zenodo.18227448)
 
 
 # **System requirements**
