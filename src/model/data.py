@@ -192,21 +192,6 @@ class DeepBurstDataset(Dataset):
 
     # ================ region / promoter views ================= #
 
-    def _get_region_representation(
-        self, eid: str, chrom: str, start: int, end: int,
-        bin_size: int, max_n_bins: int, strand: str = "+", window: Optional[int] = None
-    ) -> Tuple[torch.Tensor, int, int, int]:
-        x_np = np.load(f"{self.npy_dir}/{eid}/regions/{chrom}:{start}-{end}.npy")
-        x = torch.from_numpy(x_np).to(torch.float32)  # (n_feats, L_bp)
-        if window is not None:
-            x = x[:, 20000 - window // 2 : 20000 + window // 2]
-        x_binned, left_pad, n_bins, right_pad = self._bin_and_pad(x, bin_size, max_n_bins)
-
-        if strand == "+":
-            return x_binned, left_pad, n_bins, right_pad
-        else:
-            return torch.fliplr(x_binned), right_pad, n_bins, left_pad
-
     def _get_promoter_representation(
         self, eid: str, gene_id: str, bin_size: int, max_n_bins: int,
         strand: str = "+", window: Optional[int] = None
