@@ -83,12 +83,6 @@ targets = args.targets
 
 binsizes = args.binsizes
 
-
-best_r = 0
-best_epoch = 0
-early_stop = 1
-
-
 #
 # Setup end.
 #
@@ -320,15 +314,13 @@ for epoch in range(1, num_epoch):
 
 
     if ('bs' in targets):
-        if ckpt['bs_val_r']  > best_r:
-            ckpt.update({
-                "net": model.state_dict(),
-                "optimizer": optimizer.state_dict(),
-                "epoch": epoch,
-                "last_val_loss": val_loss,
-            })
-            torch.save(ckpt, args.output)
-            best_r = ckpt['bs_val_r']
+        ckpt.update({
+            "net": model.state_dict(),
+            "optimizer": optimizer.state_dict(),
+            "epoch": epoch,
+            "last_val_loss": val_loss,
+        })
+        torch.save(ckpt, args.output)
     
 
     scheduler.step()

@@ -80,12 +80,6 @@ targets = args.targets
 
 binsizes = args.binsizes
 
-best_acc = 0
-best_auc = 0
-best_ap = 0
-best_epoch = 0
-early_stop = 1
-
 
 #
 # Setup end.
@@ -320,37 +314,31 @@ for epoch in range(1, num_epoch):
 
 
     if 'bs_label' in targets:
-        if ckpt['bs_label_val_auc']  > best_auc:
-            ckpt.update({
-                "net": model.state_dict(),
-                "optimizer": optimizer.state_dict(),
-                "epoch": epoch,
-                "last_val_loss": val_loss,
-            })
-            torch.save(ckpt, args.output)
-            best_auc = ckpt['bs_label_val_auc']
+        ckpt.update({
+            "net": model.state_dict(),
+            "optimizer": optimizer.state_dict(),
+            "epoch": epoch,
+            "last_val_loss": val_loss,
+        })
+        torch.save(ckpt, args.output)
 
     if 'mean_label' in targets:
-        if ckpt['mean_label_val_auc']  > best_auc:
-            ckpt.update({
-                "net": model.state_dict(),
-                "optimizer": optimizer.state_dict(),
-                "epoch": epoch,
-                "last_val_loss": val_loss,
-            })
-            torch.save(ckpt, args.output)
-            best_auc = ckpt['mean_label_val_auc']
+        ckpt.update({
+            "net": model.state_dict(),
+            "optimizer": optimizer.state_dict(),
+            "epoch": epoch,
+            "last_val_loss": val_loss,
+        })
+        torch.save(ckpt, args.output)
 
     if 'cv_label' in targets:
-        if ckpt['cv_label_val_auc']  > best_auc:
-            ckpt.update({
-                "net": model.state_dict(),
-                "optimizer": optimizer.state_dict(),
-                "epoch": epoch,
-                "last_val_loss": val_loss,
-            })
-            torch.save(ckpt, args.output)
-            best_auc = ckpt['cv_label_val_auc']
+        ckpt.update({
+            "net": model.state_dict(),
+            "optimizer": optimizer.state_dict(),
+            "epoch": epoch,
+            "last_val_loss": val_loss,
+        })
+        torch.save(ckpt, args.output)
     
 
     scheduler.step()
