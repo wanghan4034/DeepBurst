@@ -1,0 +1,580 @@
+import os
+
+wildcard_constraints:
+    mark = '[^.]+',
+    acc = '[^.]+',
+
+# ============================================================
+# Reference files
+# ============================================================
+
+mm9_dir = 'extra/datasets/annotations/mm9'
+
+mm9_fa_gz = f'{mm9_dir}/mm9.fa.gz'
+mm9_fa = f'{mm9_dir}/mm9.fa'
+mm9_fai = f'{mm9_dir}/mm9.fa.fai'
+mm9_sizes = f'{mm9_dir}/mm9.fa.sizes'
+
+gencode_vm1_gtf = f'{mm9_dir}/gencode.vM1.annotation.gtf.gz'
+
+bwa_index_files = [
+    mm9_fa + '.bwt',
+    mm9_fa + '.pac',
+    mm9_fa + '.ann',
+    mm9_fa + '.amb',
+    mm9_fa + '.sa',
+]
+
+# ============================================================
+# Mouse ES-Bruce4 ChIP-seq accessions
+# Chromoformer Supplementary Table 2
+# ============================================================
+
+marks = [
+    'H3K4me1',
+    'H3K4me3',
+    'H3K9me3',
+    'H3K27me3',
+    'H3K36me3',
+    'H3K27ac',
+    'H3K9ac',
+]
+
+
+mark2accs = {
+    'H3K4me1':  ['ENCFF001KEF'],
+    'H3K4me3':  ['ENCFF001KER', 'ENCFF001KEQ'],
+    'H3K9me3':  ['ENCFF001KDP', 'ENCFF001KDM'],
+    'H3K27me3': ['ENCFF001KED', 'ENCFF001KEC'],
+    'H3K36me3': ['ENCFF001KEE', 'ENCFF001KEI'],
+    'H3K27ac':  ['ENCFF001KDQ', 'ENCFF001KDO'],
+    'H3K9ac':   ['ENCFF001KDK', 'ENCFF001KDL'],
+}
+
+
+accs = sorted({acc for acc_list in mark2accs.values() for acc in acc_list})
+
+acc2mark = {}
+for mark, acc_list in mark2accs.items():
+    for acc in acc_list:
+        acc2mark[acc] = mark
+
+# ============================================================
+# Output targets
+# ============================================================
+
+fastqs = expand(
+    'extra/datasets/mouse/fastq/{acc}.fastq.gz',
+    acc=accs
+)
+
+sorted_bams = expand(
+    'extra/datasets/mouse/chip_bam/{acc}.mm9.sorted.bam',
+    acc=accs
+)
+
+bam_indexes = expand(
+    'extra/datasets/mouse/chip_bam/{acc}.mm9.sorted.bam.bai',
+    acc=accs
+)
+
+bed36_by_acc = expand(
+    'extra/datasets/mouse/chip_bed36/{acc}.mm9.36bp.bed',
+    acc=accs
+)
+
+merged_bed36 = expand(
+    'extra/datasets/mouse/chip_bed36/ES-Bruce4-{mark}.merged.36bp.bed',
+    mark=marks
+)
+
+subsampled_bed36 = expand(
+    'extra/datasets/mouse/chip_bed36/ES-Bruce4-{mark}.merged.36bp.subsample3M.bed',
+    mark=marks
+)
+
+coverage = expand(
+    'extra/datasets/mouse/hist/ES-Bruce4-{mark}.mm9.subsample3M.bedGraph',
+    mark=marks
+)
+
+bigwig = expand(
+    'extra/datasets/epigenetic/mm9/ES-Bruce4-{mark}.bw',
+    mark=marks
+)
+
+annotation = [
+    'extra/datasets/annotations/mm9/gencode.vM1.first_transcript_per_gene.tss.bed',
+    'extra/datasets/annotations/mm9/gencode.vM1.first_transcript_per_gene.promoter_40kb.bed',
+]
+
+ALL = [
+    mm9_fa,
+    mm9_sizes,
+    gencode_vm1_gtf,
+] + bwa_index_files + fastqs + bam_indexes + bed36_by_acc + merged_bed36 + subsampled_bed36 + coverage + bigwig + annotation
+
+
+rule all:
+    input:
+        ALL
+
+
+# ============================================================
+# 0. Download and prepare mm9 / Gencode vM1 annotation
+# ============================================================
+
+rule download_mm9_fasta:
+    output:
+        fa_gz = mm9_fa_gz
+    resources:
+        network = 1
+    benchmark:
+        'benchmarks/mouse/download_mm9_fasta.tsv'
+    shell:
+        r'''
+        mkdir -p $(dirname {output.fa_gz})
+
+        wget -O {output.fa_gz} \
+            "https://hgdownload.soe.ucsc.edu/goldenPath/mm9/bigZips/mm9.fa.gz"
+        '''
+
+
+rule unzip_mm9_fasta:
+    input:
+        fa_gz = mm9_fa_gz
+    output:
+        fa = mm9_fa
+    benchmark:
+        'benchmarks/mouse/unzip_mm9_fasta.tsv'
+    shell:
+        r'''
+        mkdir -p $(dirname {output.fa})
+        gunzip -c {input.fa_gz} > {output.fa}
+        '''
+
+
+rule samtools_faidx_mm9:
+    input:
+        fa = mm9_fa
+    output:
+        fai = mm9_fai
+    benchmark:
+        'benchmarks/mouse/samtools_faidx_mm9.tsv'
+    shell:
+        r'''
+        samtools faidx {input.fa}
+        '''
+
+
+rule make_mm9_chrom_sizes:
+    input:
+        fai = mm9_fai
+    output:
+        sizes = mm9_sizes
+    benchmark:
+        'benchmarks/mouse/make_mm9_chrom_sizes.tsv'
+    shell:
+        r'''
+        cut -f1,2 {input.fai} > {output.sizes}
+        '''
+
+
+rule download_gencode_vm1_gtf:
+    output:
+        gtf = gencode_vm1_gtf
+    resources:
+        network = 1
+    benchmark:
+        'benchmarks/mouse/download_gencode_vm1_gtf.tsv'
+    shell:
+        r'''
+        mkdir -p $(dirname {output.gtf})
+
+        wget -O {output.gtf} \
+            "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_mouse/release_M1/gencode.vM1.annotation.gtf.gz"
+        '''
+
+
+# ============================================================
+# 1. Download ENCODE FASTQ
+# ============================================================
+
+rule download_encode_fastq:
+    output:
+        fastq = 'extra/datasets/mouse/fastq/{acc}.fastq.gz'
+    resources:
+        network = 1
+    benchmark:
+        'benchmarks/mouse/download_encode_fastq/{acc}.tsv'
+    shell:
+        r'''
+        mkdir -p $(dirname {output.fastq})
+
+        wget -O {output.fastq} \
+            "https://www.encodeproject.org/files/{wildcards.acc}/@@download/{wildcards.acc}.fastq.gz"
+        '''
+
+
+# ============================================================
+# 2. BWA index for mm9
+# ============================================================
+
+rule bwa_index_mm9:
+    input:
+        fa = mm9_fa
+    output:
+        bwt = mm9_fa + '.bwt',
+        pac = mm9_fa + '.pac',
+        ann = mm9_fa + '.ann',
+        amb = mm9_fa + '.amb',
+        sa = mm9_fa + '.sa'
+    benchmark:
+        'benchmarks/mouse/bwa_index_mm9.tsv'
+    shell:
+        r'''
+        bwa index {input.fa}
+        '''
+
+
+# ============================================================
+# 3. Align FASTQ to mm9
+# Using bwa aln/samse for short-read ChIP-seq
+# ============================================================
+
+rule bwa_aln:
+    input:
+        fastq = 'extra/datasets/mouse/fastq/{acc}.fastq.gz',
+        bwt = mm9_fa + '.bwt',
+        pac = mm9_fa + '.pac',
+        ann = mm9_fa + '.ann',
+        amb = mm9_fa + '.amb',
+        sa = mm9_fa + '.sa'
+    output:
+        sai = temp('extra/datasets/mouse/chip_bam/{acc}.mm9.sai')
+    threads:
+        4
+    benchmark:
+        'benchmarks/mouse/bwa_aln/{acc}.tsv'
+    shell:
+        r'''
+        mkdir -p $(dirname {output.sai})
+
+        bwa aln \
+            -t {threads} \
+            {mm9_fa} \
+            {input.fastq} \
+            > {output.sai}
+        '''
+
+
+rule bwa_samse:
+    input:
+        fastq = 'extra/datasets/mouse/fastq/{acc}.fastq.gz',
+        sai = 'extra/datasets/mouse/chip_bam/{acc}.mm9.sai'
+    output:
+        sam = temp('extra/datasets/mouse/chip_bam/{acc}.mm9.sam')
+    benchmark:
+        'benchmarks/mouse/bwa_samse/{acc}.tsv'
+    shell:
+        r'''
+        mkdir -p $(dirname {output.sam})
+
+        bwa samse \
+            {mm9_fa} \
+            {input.sai} \
+            {input.fastq} \
+            > {output.sam}
+        '''
+
+
+rule sam_to_bam:
+    input:
+        sam = 'extra/datasets/mouse/chip_bam/{acc}.mm9.sam'
+    output:
+        bam = temp('extra/datasets/mouse/chip_bam/{acc}.mm9.bam')
+    benchmark:
+        'benchmarks/mouse/sam_to_bam/{acc}.tsv'
+    shell:
+        r'''
+        mkdir -p $(dirname {output.bam})
+
+        samtools view \
+            -bS \
+            {input.sam} \
+            > {output.bam}
+        '''
+
+
+rule sambamba_sort_mouse:
+    input:
+        bam = 'extra/datasets/mouse/chip_bam/{acc}.mm9.bam'
+    output:
+        bam = 'extra/datasets/mouse/chip_bam/{acc}.mm9.sorted.bam'
+    threads:
+        4
+    benchmark:
+        'benchmarks/mouse/sambamba_sort/{acc}.tsv'
+    shell:
+        r'''
+        mkdir -p $(dirname {output.bam})
+
+        sambamba sort \
+            -o {output.bam} \
+            -t {threads} \
+            --tmpdir . \
+            {input.bam}
+        '''
+
+
+rule sambamba_index_mouse:
+    input:
+        bam = 'extra/datasets/mouse/chip_bam/{acc}.mm9.sorted.bam'
+    output:
+        bai = 'extra/datasets/mouse/chip_bam/{acc}.mm9.sorted.bam.bai'
+    threads:
+        4
+    benchmark:
+        'benchmarks/mouse/sambamba_index/{acc}.tsv'
+    shell:
+        r'''
+        sambamba index \
+            -t {threads} \
+            {input.bam}
+        '''
+
+
+# ============================================================
+# 4. Truncate aligned reads to 36 bp
+# Output BED6: chrom, start, end, read_id, mapq, strand
+# ============================================================
+
+rule bam_to_36bp_bed:
+    input:
+        bam = 'extra/datasets/mouse/chip_bam/{acc}.mm9.sorted.bam',
+        bai = 'extra/datasets/mouse/chip_bam/{acc}.mm9.sorted.bam.bai'
+    output:
+        bed = 'extra/datasets/mouse/chip_bed36/{acc}.mm9.36bp.bed'
+    benchmark:
+        'benchmarks/mouse/bam_to_36bp_bed/{acc}.tsv'
+    shell:
+        r'''
+        mkdir -p $(dirname {output.bed})
+
+        python - <<'PY'
+import re
+import subprocess
+
+bam = "{input.bam}"
+out_bed = "{output.bed}"
+read_len = 36
+min_mapq = 10
+
+def cigar_ref_len(cigar):
+    total = 0
+    for length, op in re.findall(r"(\d+)([MIDNSHP=X])", cigar):
+        if op in {"M", "D", "N", "=", "X"}:
+            total += int(length)
+    return total
+
+cmd = ["samtools", "view", "-F", "4", "-q", str(min_mapq), bam]
+
+with subprocess.Popen(cmd, stdout=subprocess.PIPE, text=True) as proc, open(out_bed + ".tmp", "w") as out:
+    for line in proc.stdout:
+        fields = line.rstrip("\n").split("\t")
+        if len(fields) < 6:
+            continue
+
+        qname = fields[0]
+        flag = int(fields[1])
+        chrom = fields[2]
+        pos0 = int(fields[3]) - 1
+        mapq = fields[4]
+        cigar = fields[5]
+
+        if chrom == "*" or cigar == "*":
+            continue
+
+        ref_len = cigar_ref_len(cigar)
+        if ref_len <= 0:
+            continue
+
+        strand = "-" if (flag & 16) else "+"
+        right = pos0 + ref_len
+
+        if strand == "+":
+            start = pos0
+            end = pos0 + read_len
+        else:
+            start = right - read_len
+            end = right
+
+        if start < 0 or end <= start:
+            continue
+
+        out.write(f"{chrom}\t{start}\t{end}\t{qname}\t{mapq}\t{strand}\n")
+
+    ret = proc.wait()
+    if ret != 0:
+        raise SystemExit(ret)
+PY
+
+        sort -k1,1 -k2,2n {output.bed}.tmp > {output.bed}
+        rm -f {output.bed}.tmp
+        '''
+        
+
+# ============================================================
+# 5. Merge replicates per mark
+# ============================================================
+
+def get_bed36_inputs_for_mark(wildcards):
+    return [
+        f'extra/datasets/mouse/chip_bed36/{acc}.mm9.36bp.bed'
+        for acc in mark2accs[wildcards.mark]
+    ]
+
+
+rule merge_replicates_36bp:
+    input:
+        get_bed36_inputs_for_mark
+    output:
+        bed = 'extra/datasets/mouse/chip_bed36/ES-Bruce4-{mark}.merged.36bp.bed'
+    benchmark:
+        'benchmarks/mouse/merge_replicates_36bp/{mark}.tsv'
+    shell:
+        r'''
+        mkdir -p $(dirname {output.bed})
+
+        cat {input} \
+        | sort -k1,1 -k2,2n \
+        > {output.bed}
+        '''
+
+
+# ============================================================
+# 6. Subsample to 3 million reads
+# ============================================================
+
+rule subsample_3m_reads:
+    input:
+        bed = 'extra/datasets/mouse/chip_bed36/ES-Bruce4-{mark}.merged.36bp.bed'
+    output:
+        bed = 'extra/datasets/mouse/chip_bed36/ES-Bruce4-{mark}.merged.36bp.subsample3M.bed'
+    params:
+        n = 3000000,
+        seed = 20240529
+    benchmark:
+        'benchmarks/mouse/subsample_3m_reads/{mark}.tsv'
+    shell:
+        r'''
+        mkdir -p $(dirname {output.bed})
+
+        total=$(wc -l < {input.bed})
+
+        if [ "$total" -le "{params.n}" ]; then
+            echo "[WARN] {wildcards.mark}: total reads $total <= {params.n}; keeping all reads."
+            cp {input.bed} {output.bed}
+        else
+            python - <<'PY'
+import random
+
+infile = "{input.bed}"
+outfile = "{output.bed}.tmp"
+n_keep = int("{params.n}")
+seed = int("{params.seed}")
+
+with open(infile) as f:
+    total = sum(1 for _ in f)
+
+random.seed(seed)
+selected = set(random.sample(range(total), n_keep))
+
+with open(infile) as f, open(outfile, "w") as out:
+    for i, line in enumerate(f):
+        if i in selected:
+            out.write(line)
+PY
+
+            sort -k1,1 -k2,2n {output.bed}.tmp > {output.bed}
+            rm -f {output.bed}.tmp
+        fi
+        '''
+
+
+# ============================================================
+# 7. genomecov bedGraph
+# Use truncated and subsampled 36-bp BED as input
+# ============================================================
+
+rule bedtools_genomecov_mouse:
+    input:
+        bed = 'extra/datasets/mouse/chip_bed36/ES-Bruce4-{mark}.merged.36bp.subsample3M.bed',
+        sizes = mm9_sizes
+    output:
+        bedgraph = 'extra/datasets/mouse/hist/ES-Bruce4-{mark}.mm9.subsample3M.bedGraph'
+    benchmark:
+        'benchmarks/mouse/bedtools_genomecov/{mark}.tsv'
+    shell:
+        r'''
+        mkdir -p $(dirname {output.bedgraph})
+
+        bedtools genomecov \
+            -i {input.bed} \
+            -g {input.sizes} \
+            -bg \
+        | bedtools sort -i stdin \
+        > {output.bedgraph}
+        '''
+
+
+# ============================================================
+# 8. bedGraph to BigWig
+# ============================================================
+
+rule bedgraph_to_bigwig_mouse:
+    input:
+        bedgraph = 'extra/datasets/mouse/hist/ES-Bruce4-{mark}.mm9.subsample3M.bedGraph',
+        sizes = mm9_sizes
+    output:
+        bw = 'extra/datasets/epigenetic/mm9/ES-Bruce4-{mark}.bw'
+    benchmark:
+        'benchmarks/mouse/bedgraph_to_bigwig/{mark}.tsv'
+    shell:
+        r'''
+        mkdir -p $(dirname {output.bw})
+
+        bedGraphToBigWig \
+            {input.bedgraph} \
+            {input.sizes} \
+            {output.bw}
+        '''
+
+
+# ============================================================
+# 9. Gencode vM1 TSS/promoter BED
+# ============================================================
+
+rule gencode_vm1_tss_promoter:
+    input:
+        gtf = gencode_vm1_gtf,
+        sizes = mm9_sizes
+    output:
+        tss = 'extra/datasets/annotations/mm9/gencode.vM1.first_transcript_per_gene.tss.bed',
+        promoter = 'extra/datasets/annotations/mm9/gencode.vM1.first_transcript_per_gene.promoter_40kb.bed'
+    benchmark:
+        'benchmarks/mouse/gencode_vm1_tss_promoter.tsv'
+    shell:
+        r'''
+        mkdir -p $(dirname {output.tss})
+
+        python benchmarks/revised_v2/reviewer3/scripts/make_tss_promoter_from_gencode.py \
+            --gtf {input.gtf} \
+            --chrom-sizes {input.sizes} \
+            --out-tss-bed {output.tss} \
+            --out-promoter-bed {output.promoter} \
+            --mode first_transcript_per_gene \
+            --gene-type protein_coding \
+            --upstream 20000 \
+            --downstream 20000
+        '''

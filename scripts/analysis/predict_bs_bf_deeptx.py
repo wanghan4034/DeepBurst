@@ -76,7 +76,7 @@ for eid in ["E116","E118","E003"]:
 
         checkpoints = f"checkpoints/{eid}.{fold}.bs_bf_para_deeptx.model.pt"
 
-        meta_path = f"extra/datasets/processed/v1/meta_datasets/meta_data_{eid}_deeptx.csv"
+        meta_path = f"extra/datasets/processed/v2/meta_datasets/meta_data_{eid}_deeptx.csv"
 
         #
         # Setup end.

@@ -7,12 +7,12 @@ import argparse
 from tqdm import tqdm
 from copy import deepcopy
 from typing import Dict
-from src.data.features.basic import  FragData
-from src.data.features.genomics import GenomicInfo, get_dna_sequences
-from src.data.features.epigenetic import BigWigInfo
-from src.data.features.genomic_utils import genomic_site_region_scale
+from src.data_preprocessing.histone_marks.basic import  FragData
+from src.data_preprocessing.histone_marks.genomics import GenomicInfo, get_dna_sequences
+from src.data_preprocessing.histone_marks.epigenetic import BigWigInfo
+from src.data_preprocessing.histone_marks.genomic_utils import genomic_site_region_scale
 from src.utils.logs import get_logger
-from src.data.features.constants import GENOMIC_FASTA_PATH,  SCALED_WINDOW_SIZE , BASE_MAP, MARKS
+from src.data_preprocessing.histone_marks.constants import GENOMIC_FASTA_PATH,  SCALED_WINDOW_SIZE , BASE_MAP, MARKS
 logger = get_logger()
 
 BIN_SIZE = 500

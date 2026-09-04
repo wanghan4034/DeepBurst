@@ -1,0 +1,337 @@
+import os
+
+wildcard_constraints:
+    mark = '[^.]+',
+    acc = '[^.]+',
+
+
+# ============================================================
+# Reference files
+# ============================================================
+
+mm9_dir = 'extra/datasets/annotations/mm9'
+mm9_sizes = f'{mm9_dir}/mm9.fa.sizes'
+
+
+# ============================================================
+# Mouse ES-Bruce4 ChIP-seq accessions
+# Chromoformer Supplementary Table 2
+# ============================================================
+
+marks = [
+    'H3K4me1',
+    'H3K4me3',
+    'H3K9me3',
+    'H3K27me3',
+    'H3K36me3',
+    'H3K27ac',
+    'H3K9ac',
+]
+
+mark2accs = {
+    'H3K4me1':  ['ENCFF001KEF'],
+    'H3K4me3':  ['ENCFF001KER', 'ENCFF001KEQ'],
+    'H3K9me3':  ['ENCFF001KDP', 'ENCFF001KDM'],
+    'H3K27me3': ['ENCFF001KED', 'ENCFF001KEC'],
+    'H3K36me3': ['ENCFF001KEE', 'ENCFF001KEI'],
+    'H3K27ac':  ['ENCFF001KDQ', 'ENCFF001KDO'],
+    'H3K9ac':   ['ENCFF001KDK', 'ENCFF001KDL'],
+}
+
+accs = sorted({acc for acc_list in mark2accs.values() for acc in acc_list})
+
+
+# ============================================================
+# Final targets
+# ============================================================
+
+bigwig = expand(
+    'extra/datasets/epigenetic/mm9/ES-Bruce4-{mark}.bw',
+    mark=marks
+)
+
+
+rule all:
+    input:
+        bigwig
+
+
+# ============================================================
+# Input checker
+# ============================================================
+
+rule check_existing_sorted_bam:
+    input:
+        bam = 'extra/datasets/mouse/chip_bam/{acc}.mm9.sorted.bam',
+        bai = 'extra/datasets/mouse/chip_bam/{acc}.mm9.sorted.bam.bai'
+    output:
+        ok = 'extra/datasets/mouse/chip_bam/{acc}.mm9.sorted.bam.ok'
+    benchmark:
+        'benchmarks/mouse/from_bam/check_existing_sorted_bam/{acc}.tsv'
+    shell:
+        r'''
+        mkdir -p $(dirname {output.ok})
+        mkdir -p benchmarks/mouse/from_bam/check_existing_sorted_bam
+
+        report="extra/datasets/mouse/chip_bam/{wildcards.acc}.mm9.sorted.bam.check.txt"
+
+        echo "[INFO] Checking sorted BAM for {wildcards.acc}" > "$report"
+        echo "[INFO] BAM: {input.bam}" >> "$report"
+        echo "[INFO] BAI: {input.bai}" >> "$report"
+
+        if [ ! -s {input.bam} ]; then
+            echo "[ERROR] Missing or empty BAM: {input.bam}" >> "$report"
+            exit 1
+        fi
+
+        if [ ! -s {input.bai} ]; then
+            echo "[ERROR] Missing or empty BAI: {input.bai}" >> "$report"
+            exit 1
+        fi
+
+        if ! samtools quickcheck -v {input.bam} >> "$report" 2>&1; then
+            echo "[ERROR] samtools quickcheck failed." >> "$report"
+            exit 1
+        fi
+
+        mapped_reads=$(samtools view -c -F 4 {input.bam})
+        total_reads=$(samtools view -c {input.bam})
+
+        echo "[INFO] Total BAM records: $total_reads" >> "$report"
+        echo "[INFO] Mapped BAM records: $mapped_reads" >> "$report"
+
+        if [ "$mapped_reads" -le 0 ]; then
+            echo "[ERROR] No mapped reads found." >> "$report"
+            exit 1
+        fi
+
+        echo "OK" > {output.ok}
+        '''
+
+
+# ============================================================
+# 1. Truncate aligned reads to 36 bp
+# Output BED6: chrom, start, end, read_id, mapq, strand
+# ============================================================
+
+rule bam_to_36bp_bed:
+    input:
+        bam = 'extra/datasets/mouse/chip_bam/{acc}.mm9.sorted.bam',
+        bai = 'extra/datasets/mouse/chip_bam/{acc}.mm9.sorted.bam.bai',
+        ok = 'extra/datasets/mouse/chip_bam/{acc}.mm9.sorted.bam.ok'
+    output:
+        bed = 'extra/datasets/mouse/chip_bed36/{acc}.mm9.36bp.bed'
+    benchmark:
+        'benchmarks/mouse/from_bam/bam_to_36bp_bed/{acc}.tsv'
+    shell:
+        r'''
+        mkdir -p $(dirname {output.bed})
+
+        python - <<'PY'
+import re
+import subprocess
+
+bam = "{input.bam}"
+out_bed = "{output.bed}"
+tmp_bed = out_bed + ".tmp"
+
+read_len = 36
+min_mapq = 10
+
+def cigar_ref_len(cigar):
+    total = 0
+    for length, op in re.findall(r"(\d+)([MIDNSHP=X])", cigar):
+        if op in ("M", "D", "N", "=", "X"):
+            total += int(length)
+    return total
+
+cmd = ["samtools", "view", "-F", "4", "-q", str(min_mapq), bam]
+
+with subprocess.Popen(cmd, stdout=subprocess.PIPE, text=True) as proc, open(tmp_bed, "w") as out:
+    for line in proc.stdout:
+        fields = line.rstrip("\n").split("\t")
+        if len(fields) < 6:
+            continue
+
+        qname = fields[0]
+        flag = int(fields[1])
+        chrom = fields[2]
+        pos0 = int(fields[3]) - 1
+        mapq = fields[4]
+        cigar = fields[5]
+
+        if chrom == "*" or cigar == "*":
+            continue
+
+        ref_len = cigar_ref_len(cigar)
+        if ref_len <= 0:
+            continue
+
+        strand = "-" if (flag & 16) else "+"
+        right = pos0 + ref_len
+
+        if strand == "+":
+            start = pos0
+            end = pos0 + read_len
+        else:
+            start = right - read_len
+            end = right
+
+        if start < 0 or end <= start:
+            continue
+
+        out.write("{{}}\t{{}}\t{{}}\t{{}}\t{{}}\t{{}}\n".format(
+            chrom, start, end, qname, mapq, strand
+        ))
+
+    ret = proc.wait()
+    if ret != 0:
+        raise SystemExit(ret)
+PY
+
+        sort -k1,1 -k2,2n {output.bed}.tmp > {output.bed}
+        rm -f {output.bed}.tmp
+
+        test -s {output.bed}
+        '''
+
+
+# ============================================================
+# 2. Merge replicates per mark
+# ============================================================
+
+def get_bed36_inputs_for_mark(wildcards):
+    return [
+        f'extra/datasets/mouse/chip_bed36/{acc}.mm9.36bp.bed'
+        for acc in mark2accs[wildcards.mark]
+    ]
+
+
+rule merge_replicates_36bp:
+    input:
+        get_bed36_inputs_for_mark
+    output:
+        bed = 'extra/datasets/mouse/chip_bed36/ES-Bruce4-{mark}.merged.36bp.bed'
+    benchmark:
+        'benchmarks/mouse/from_bam/merge_replicates_36bp/{mark}.tsv'
+    shell:
+        r'''
+        mkdir -p $(dirname {output.bed})
+
+        cat {input} \
+        | sort -k1,1 -k2,2n \
+        > {output.bed}.tmp
+
+        mv {output.bed}.tmp {output.bed}
+
+        test -s {output.bed}
+        '''
+
+
+# ============================================================
+# 3. Subsample to 3 million reads per mark
+# ============================================================
+
+rule subsample_3m_reads:
+    input:
+        bed = 'extra/datasets/mouse/chip_bed36/ES-Bruce4-{mark}.merged.36bp.bed'
+    output:
+        bed = 'extra/datasets/mouse/chip_bed36/ES-Bruce4-{mark}.merged.36bp.subsample3M.bed'
+    params:
+        n = 3000000,
+        seed = 20240529
+    benchmark:
+        'benchmarks/mouse/from_bam/subsample_3m_reads/{mark}.tsv'
+    shell:
+        r'''
+        mkdir -p $(dirname {output.bed})
+
+        total=$(wc -l < {input.bed})
+
+        if [ "$total" -le "{params.n}" ]; then
+            echo "[WARN] {wildcards.mark}: total reads $total <= {params.n}; keeping all reads."
+            cp {input.bed} {output.bed}
+        else
+            python - <<'PY'
+import random
+
+infile = "{input.bed}"
+outfile = "{output.bed}.tmp"
+n_keep = int("{params.n}")
+seed = int("{params.seed}")
+
+with open(infile) as f:
+    total = sum(1 for _ in f)
+
+random.seed(seed)
+selected = set(random.sample(range(total), n_keep))
+
+with open(infile) as f, open(outfile, "w") as out:
+    for i, line in enumerate(f):
+        if i in selected:
+            out.write(line)
+PY
+
+            sort -k1,1 -k2,2n {output.bed}.tmp > {output.bed}
+            rm -f {output.bed}.tmp
+        fi
+
+        test -s {output.bed}
+        '''
+
+
+# ============================================================
+# 4. BED -> bedGraph
+# Use truncated and subsampled 36-bp BED as input
+# ============================================================
+
+rule bedtools_genomecov_mouse:
+    input:
+        bed = 'extra/datasets/mouse/chip_bed36/ES-Bruce4-{mark}.merged.36bp.subsample3M.bed',
+        sizes = mm9_sizes
+    output:
+        bedgraph = 'extra/datasets/mouse/hist/ES-Bruce4-{mark}.mm9.subsample3M.bedGraph'
+    benchmark:
+        'benchmarks/mouse/from_bam/bedtools_genomecov/{mark}.tsv'
+    shell:
+        r'''
+        mkdir -p $(dirname {output.bedgraph})
+
+        bedtools genomecov \
+            -i {input.bed} \
+            -g {input.sizes} \
+            -bg \
+        | bedtools sort -i stdin \
+        > {output.bedgraph}.tmp
+
+        mv {output.bedgraph}.tmp {output.bedgraph}
+
+        test -s {output.bedgraph}
+        '''
+
+
+# ============================================================
+# 5. bedGraph -> BigWig
+# ============================================================
+
+rule bedgraph_to_bigwig_mouse:
+    input:
+        bedgraph = 'extra/datasets/mouse/hist/ES-Bruce4-{mark}.mm9.subsample3M.bedGraph',
+        sizes = mm9_sizes
+    output:
+        bw = 'extra/datasets/epigenetic/mm9/ES-Bruce4-{mark}.bw'
+    benchmark:
+        'benchmarks/mouse/from_bam/bedgraph_to_bigwig/{mark}.tsv'
+    shell:
+        r'''
+        mkdir -p $(dirname {output.bw})
+
+        bedGraphToBigWig \
+            {input.bedgraph} \
+            {input.sizes} \
+            {output.bw}.tmp
+
+        mv {output.bw}.tmp {output.bw}
+
+        test -s {output.bw}
+        '''

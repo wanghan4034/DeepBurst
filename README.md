@@ -49,7 +49,7 @@ For GPU support, install PyTorch following the official instructions and ensure 
 
 ## **Option A: Inference with a pretrained checkpoint (recommended)**
 
-1. Download the processed dataset and pretrained checkpoints from Zenodo (they will be made publicly available upon acceptance).
+1. Download the processed dataset and pretrained checkpoints from **[Zenodo](https://doi.org/10.5281/zenodo.18277955)**.
 
 - Assets to download:
   - deepburst_processed_data.zip
@@ -89,8 +89,8 @@ python train.py \
 - src/ core model and utilities
 - scripts/ demo, analysis, and figure-generation scripts
 - configs/ YAML configs for training/inference
-- checkpoints/ pretrained models (download from Zenodo)
-- extra/datasets/ processed data, gene annotations, and resources (download from Zenodo)
+- checkpoints/ pretrained models (download from **[Zenodo](https://doi.org/10.5281/zenodo.18277955)**)
+- extra/datasets/ processed data, gene annotations, and resources (download from **[Zenodo](https://doi.org/10.5281/zenodo.18277955)**)
 
 # **Full pipeline**
 
@@ -228,7 +228,7 @@ git clone --recurse-submodules https://github.com/wanghan4034/DeepBurst.git
 
 # **Model/data downloads**
 
-Pretrained checkpoints and processed datasets are provided via **Zenodo** (they will be made publicly available upon acceptance):
+Pretrained checkpoints and processed datasets are provided via **[Zenodo](https://doi.org/10.5281/zenodo.18277955)**:
 
 
 
@@ -268,13 +268,19 @@ Enformer-based inference is typically run on a high-memory GPU (e.g., A800 80 GB
 
 # **Citation**s
 
-If you use DeepBurst in your work, please cite the accompanying manuscript:
+If you use DeepBurst in your research, please cite the archived release:
 
-```
-@misc{DeepBurst,
-  title   = {DeepBurst: Predicting transcriptional bursting kinetics from histone modification profiles},
-  author  = {Wang, Han and others},
-  year    = {2026},
-  note    = {Manuscript in preparation}
+> Wang, H., Zhang, Z., Huang, Z., Yu, X., Wang, Z., Qiu, H. & Zhang, J. *Predicting transcriptional burst kinetics from histone modifications with deep learning*. Zenodo. https://doi.org/10.5281/zenodo.18277955 (2026).
+
+BibTeX:
+
+```bibtex
+@misc{Wang2026DeepBurst,
+  author       = {Wang, Han and Zhang, Zhenquan and Huang, Zhiwei and Yu, Xiaochen and Wang, Zihao and Qiu, Hongyu and Zhang, Jiajun},
+  title        = {Predicting transcriptional burst kinetics from histone modifications with deep learning},
+  year         = {2026},
+  howpublished = {Zenodo},
+  doi          = {10.5281/zenodo.18277955},
+  url          = {https://doi.org/10.5281/zenodo.18277955}
 }
 ```
