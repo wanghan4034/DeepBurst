@@ -270,16 +270,16 @@ Enformer-based inference is typically run on a high-memory GPU (e.g., A800 80 GB
 
 If you use DeepBurst in your research, please cite the archived release:
 
-> Wang, H., Zhang, Z., Huang, Z., Yu, X., Wang, Z., Qiu, H. & Zhang, J. *Predicting transcriptional burst kinetics from histone modifications with deep learning*. Zenodo. https://doi.org/10.5281/zenodo.18277955 (2026).
+> Han Wang, Zhenquan Zhang, Zhiwei Huang, Xiaochen Yu, Zihao Wang, Hongyu Qiu, and Jiajun Zhang. *DeepBurst: Predicting transcriptional burst kinetics from histone modifications with deep learning*. Zenodo. [https://doi.org/10.5281/zenodo.18277955](https://doi.org/10.5281/zenodo.18277955) (2026).
 
 BibTeX:
 
 ```bibtex
-@misc{Wang2026DeepBurst,
-  author       = {Wang, Han and Zhang, Zhenquan and Huang, Zhiwei and Yu, Xiaochen and Wang, Zihao and Qiu, Hongyu and Zhang, Jiajun},
-  title        = {Predicting transcriptional burst kinetics from histone modifications with deep learning},
-  year         = {2026},
+@misc{DeepBurstZenodo,
+  author       = {Han Wang and Zhenquan Zhang and Zhiwei Huang and Xiaochen Yu and Zihao Wang and Hongyu Qiu and Jiajun Zhang},
+  title        = {{DeepBurst}: Predicting transcriptional burst kinetics from histone modifications with deep learning},
   howpublished = {Zenodo},
+  year         = {2026},
   doi          = {10.5281/zenodo.18277955},
   url          = {https://doi.org/10.5281/zenodo.18277955}
 }
