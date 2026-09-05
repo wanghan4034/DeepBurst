@@ -74,7 +74,7 @@ python scripts/demo_infer.py \
 ## **Option B: Train from processed data**
 
 ```
-python train.py \
+python src/model/train.py \
   --config configs/default.yaml \
   --meta extra/datasets/processed/v2/meta_datasets/meta_data_E003.csv \
   --npy-dir extra/datasets/processed/v2 \
@@ -197,7 +197,7 @@ Example loop for **E003,  fold 0**:
 ```
 eid=E003
 fold=0
-python train.py \
+python src/model/train.py \
   --config configs/default.yaml \
   --meta extra/datasets/processed/v2/meta_datasets/meta_data_${eid}.csv \
   --npy-dir extra/datasets/processed/v2 \
